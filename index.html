@@ -247,6 +247,7 @@ textarea{height:64px;resize:vertical}
     <button class="iconbtn" id="prevBtn">‹</button>
     <button class="iconbtn" id="nextBtn">›</button>
     <button class="iconbtn" id="settingsBtn">⚙ Settings</button>
+    <button class="iconbtn" id="syncNowBtn" title="Sync now">⟲ <span id="headerSyncStatus">Local only</span></button>
     <button class="iconbtn" id="exportBtn">⭳ Export</button>
     <label class="iconbtn filebtn">⭱ Import<input type="file" id="importFile" accept=".json" style="display:none"></label>
   </div>
@@ -430,6 +431,23 @@ textarea{height:64px;resize:vertical}
       <button class="btn btn-ghost" id="closeSettingsBtn">Cancel</button>
       <button class="btn btn-primary" id="saveSettingsBtn">Save settings</button>
     </div>
+
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--hair)">
+      <div class="lbl" style="margin-bottom:10px">Cross-device sync (GitHub Gist)</div>
+      <div style="margin-bottom:10px">
+        <label style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px">GitHub token (gist read/write scope)</label>
+        <input type="password" id="cfgToken" placeholder="github_pat_…">
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px">Gist ID (leave blank on first device to create one)</label>
+        <input type="text" id="cfgGistId" placeholder="auto-filled after first connect">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="connectSyncBtn">Connect &amp; sync now</button>
+        <button class="btn btn-ghost" id="disconnectSyncBtn">Disconnect</button>
+        <span class="mono" id="syncStatus" style="font-size:12px;color:var(--muted)">Not configured</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -457,6 +475,28 @@ textarea{height:64px;resize:vertical}
    ============================================================ */
 
 const STORE_KEY = "ledgerV7";
+const SYNC_KEY = "ledgerSyncConfig"; // {token, gistId} — stays local, never pushed into the gist payload
+const GIST_FILENAME = "ledger-data.json";
+
+function loadSyncConfig(){
+  try{
+    return JSON.parse(localStorage.getItem(SYNC_KEY) || "null") || {token:"", gistId:""};
+  }catch(e){
+    return {token:"", gistId:""};
+  }
+}
+function saveSyncConfig(cfg){
+  localStorage.setItem(SYNC_KEY, JSON.stringify(cfg));
+}
+let syncConfig = loadSyncConfig();
+let syncTimer = null;
+let syncing = false;
+
+function setSyncStatus(text){
+  document.getElementById("syncStatus").innerText = text;
+  document.getElementById("headerSyncStatus").innerText = text;
+}
+
 const DEFAULT_SETTINGS = {
   dailyRate: 1827.63,
   taxRegular: 5,      // %
@@ -475,19 +515,156 @@ function loadStore(){
     raw = null;
   }
   if(!raw || typeof raw !== "object"){
-    raw = { _version:7, settings:{...DEFAULT_SETTINGS}, entries:{} };
+    raw = { _version:7, _updatedAt:0, settings:{...DEFAULT_SETTINGS}, entries:{} };
   }
+  if(raw._updatedAt == null) raw._updatedAt = 0;
   if(!raw.settings) raw.settings = {...DEFAULT_SETTINGS};
   if(!raw.entries) raw.entries = {};
   return raw;
 }
 
 function saveStore(){
+  store._updatedAt = Date.now();
   try{
     localStorage.setItem(STORE_KEY, JSON.stringify(store));
   }catch(e){
     showToast("Save failed — storage may be full.");
     console.error(e);
+  }
+  scheduleSyncPush();
+}
+
+/* ============================================================
+   GITHUB GIST SYNC
+   ============================================================ */
+function scheduleSyncPush(){
+  if(!syncConfig.token || !syncConfig.gistId) return;
+  clearTimeout(syncTimer);
+  setSyncStatus("Syncing…");
+  syncTimer = setTimeout(pushToGist, 1200);
+}
+
+async function pushToGist(){
+  if(!syncConfig.token || !syncConfig.gistId) return;
+  syncing = true;
+  try{
+    const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `token ${syncConfig.token}`,
+        "Accept": "application/vnd.github+json"
+      },
+      body: JSON.stringify({
+        files: { [GIST_FILENAME]: { content: JSON.stringify(store) } }
+      })
+    });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    setSyncStatus("Synced just now");
+  }catch(e){
+    console.error("Gist push failed", e);
+    setSyncStatus("Sync failed — check token");
+  }
+  syncing = false;
+}
+
+async function pullFromGist(){
+  if(!syncConfig.token || !syncConfig.gistId) return null;
+  const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+    headers: {
+      "Authorization": `token ${syncConfig.token}`,
+      "Accept": "application/vnd.github+json"
+    }
+  });
+  if(!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  const file = data.files && data.files[GIST_FILENAME];
+  if(!file || !file.content) return null;
+  return JSON.parse(file.content);
+}
+
+async function createGist(){
+  const res = await fetch("https://api.github.com/gists", {
+    method: "POST",
+    headers: {
+      "Authorization": `token ${syncConfig.token}`,
+      "Accept": "application/vnd.github+json"
+    },
+    body: JSON.stringify({
+      description: "Ledger salary tracker data (private)",
+      public: false,
+      files: { [GIST_FILENAME]: { content: JSON.stringify(store) } }
+    })
+  });
+  if(!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  return data.id;
+}
+
+async function connectAndSync(){
+  const token = document.getElementById("cfgToken").value.trim();
+  let gistId = document.getElementById("cfgGistId").value.trim();
+  if(!token){ showToast("Paste your GitHub token first."); return; }
+
+  syncConfig = { token, gistId };
+  saveSyncConfig(syncConfig);
+  setSyncStatus("Connecting…");
+
+  try{
+    if(!gistId){
+      gistId = await createGist();
+      syncConfig.gistId = gistId;
+      saveSyncConfig(syncConfig);
+      document.getElementById("cfgGistId").value = gistId;
+      showToast("Created Gist " + gistId + " — copy this ID into your other device.");
+      setSyncStatus("Synced just now");
+    } else {
+      const remote = await pullFromGist();
+      if(remote && (remote._updatedAt || 0) > (store._updatedAt || 0)){
+        store = remote;
+        localStorage.setItem(STORE_KEY, JSON.stringify(store));
+        render();
+        showToast("Pulled latest data from Gist.");
+      } else {
+        await pushToGist();
+        showToast("Pushed local data to Gist.");
+      }
+      setSyncStatus("Synced just now");
+    }
+  }catch(e){
+    console.error(e);
+    setSyncStatus("Sync failed — check token/ID");
+    showToast("Could not connect. Check the token and Gist ID.");
+  }
+}
+
+function disconnectSync(){
+  syncConfig = {token:"", gistId:""};
+  saveSyncConfig(syncConfig);
+  document.getElementById("cfgToken").value = "";
+  document.getElementById("cfgGistId").value = "";
+  setSyncStatus("Not configured");
+  showToast("Sync disconnected. Data stays local on this device.");
+}
+
+async function initialSync(){
+  if(!syncConfig.token || !syncConfig.gistId){
+    setSyncStatus("Local only");
+    return;
+  }
+  setSyncStatus("Syncing…");
+  try{
+    const remote = await pullFromGist();
+    if(remote && (remote._updatedAt || 0) > (store._updatedAt || 0)){
+      store = remote;
+      localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      render();
+    } else if(remote && (store._updatedAt || 0) > (remote._updatedAt || 0)){
+      await pushToGist();
+    }
+    setSyncStatus("Synced");
+  }catch(e){
+    console.error(e);
+    setSyncStatus("Offline / sync failed");
   }
 }
 
@@ -900,6 +1077,8 @@ function openSettings(){
   document.getElementById("cfgOtMult").value = s.otMult;
   document.getElementById("cfgOtTax").value = s.otTax;
   document.getElementById("cfgHolMult").value = s.holMult;
+  document.getElementById("cfgToken").value = syncConfig.token || "";
+  document.getElementById("cfgGistId").value = syncConfig.gistId || "";
   document.getElementById("settingsModal").classList.add("open");
 }
 function closeSettings(){ document.getElementById("settingsModal").classList.remove("open"); }
@@ -994,6 +1173,29 @@ document.getElementById("clearDayBtn").onclick = clearDay;
 document.getElementById("settingsBtn").onclick = openSettings;
 document.getElementById("closeSettingsBtn").onclick = closeSettings;
 document.getElementById("saveSettingsBtn").onclick = saveSettings;
+document.getElementById("connectSyncBtn").onclick = connectAndSync;
+document.getElementById("disconnectSyncBtn").onclick = disconnectSync;
+document.getElementById("syncNowBtn").onclick = async () => {
+  if(!syncConfig.token || !syncConfig.gistId){ showToast("Set up sync in Settings first."); return; }
+  setSyncStatus("Syncing…");
+  try{
+    const remote = await pullFromGist();
+    if(remote && (remote._updatedAt||0) > (store._updatedAt||0)){
+      store = remote;
+      localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      render();
+      showToast("Pulled latest from Gist.");
+    } else {
+      await pushToGist();
+      showToast("Pushed latest to Gist.");
+    }
+    setSyncStatus("Synced just now");
+  }catch(e){
+    console.error(e);
+    setSyncStatus("Sync failed");
+    showToast("Sync failed — check connection/token.");
+  }
+};
 
 document.getElementById("exportBtn").onclick = exportJSON;
 document.getElementById("importFile").addEventListener("change", e=>{

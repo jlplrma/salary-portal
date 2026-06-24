@@ -551,18 +551,21 @@ async function pushToGist(){
     const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
       method: "PATCH",
       headers: {
-        "Authorization": `token ${syncConfig.token}`,
+        "Authorization": `Bearer ${syncConfig.token}`,
         "Accept": "application/vnd.github+json"
       },
       body: JSON.stringify({
         files: { [GIST_FILENAME]: { content: JSON.stringify(store) } }
       })
     });
-    if(!res.ok) throw new Error("HTTP " + res.status);
+    if(!res.ok){
+      const body = await res.text().catch(()=>"" );
+      throw new Error(`HTTP ${res.status} ${res.statusText} — ${body.slice(0,200)}`);
+    }
     setSyncStatus("Synced just now");
   }catch(e){
     console.error("Gist push failed", e);
-    setSyncStatus("Sync failed — check token");
+    setSyncStatus("Sync failed: " + e.message);
   }
   syncing = false;
 }
@@ -571,11 +574,14 @@ async function pullFromGist(){
   if(!syncConfig.token || !syncConfig.gistId) return null;
   const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
     headers: {
-      "Authorization": `token ${syncConfig.token}`,
+      "Authorization": `Bearer ${syncConfig.token}`,
       "Accept": "application/vnd.github+json"
     }
   });
-  if(!res.ok) throw new Error("HTTP " + res.status);
+  if(!res.ok){
+    const body = await res.text().catch(()=>"" );
+    throw new Error(`HTTP ${res.status} ${res.statusText} — ${body.slice(0,200)}`);
+  }
   const data = await res.json();
   const file = data.files && data.files[GIST_FILENAME];
   if(!file || !file.content) return null;
@@ -586,7 +592,7 @@ async function createGist(){
   const res = await fetch("https://api.github.com/gists", {
     method: "POST",
     headers: {
-      "Authorization": `token ${syncConfig.token}`,
+      "Authorization": `Bearer ${syncConfig.token}`,
       "Accept": "application/vnd.github+json"
     },
     body: JSON.stringify({
@@ -632,8 +638,8 @@ async function connectAndSync(){
     }
   }catch(e){
     console.error(e);
-    setSyncStatus("Sync failed — check token/ID");
-    showToast("Could not connect. Check the token and Gist ID.");
+    setSyncStatus("Sync failed: " + e.message);
+    showToast("Could not connect: " + e.message);
   }
 }
 

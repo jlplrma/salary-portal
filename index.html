@@ -204,6 +204,7 @@ table.tracker td.remarks{font-family:'IBM Plex Sans',Arial,sans-serif;color:var(
 .optbtn.sel-leavepaid.active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
 .optbtn.sel-leaveunpaid.active{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
 .optbtn.sel-none.active{background:var(--paper3);border-color:var(--muted);color:var(--text)}
+.optbtn.active{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 .checkrow{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13.5px}
 textarea,input[type=text],input[type=number]{
   width:100%;background:var(--paper2);color:var(--text);border:1px solid var(--hair);
@@ -323,6 +324,7 @@ textarea{height:64px;resize:vertical}
       <div class="viewtabs">
         <button data-view="calendar" class="active">Calendar</button>
         <button data-view="tracker">Monthly Tracker</button>
+        <button data-view="payments">Payments</button>
       </div>
 
       <div id="calendarView">
@@ -358,6 +360,28 @@ textarea{height:64px;resize:vertical}
           </table>
         </div>
       </div>
+
+      <div id="paymentsView" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <span class="label" style="color:var(--muted);font-size:13px">Log actual money received — separate from when you earned it.</span>
+          <button class="btn btn-primary" id="addPaymentBtn">+ Log payment</button>
+        </div>
+        <div class="tracker-wrap">
+          <table class="tracker">
+            <thead>
+              <tr>
+                <th>Date received</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Covers period</th>
+                <th>Remarks</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="paymentsBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -389,12 +413,7 @@ textarea{height:64px;resize:vertical}
 
     <div class="fieldgroup">
       <div class="lbl">Payroll</div>
-      <div class="checkrow"><input type="checkbox" id="payday"><label for="payday">Payday (expected)</label></div>
-      <div class="checkrow"><input type="checkbox" id="salaryReceived"><label for="salaryReceived">Salary received</label></div>
-      <div class="checkrow" id="receivedAmtRow" style="display:none">
-        <label for="receivedAmt" style="min-width:110px">Amount received</label>
-        <input type="number" id="receivedAmt" step="0.01" placeholder="₱0.00">
-      </div>
+      <div class="checkrow"><input type="checkbox" id="payday"><label for="payday">Expected payday (reminder only — log actual payments in the Payments tab)</label></div>
     </div>
 
     <div class="fieldgroup">
@@ -409,6 +428,55 @@ textarea{height:64px;resize:vertical}
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost" id="closeModalBtn">Cancel</button>
         <button class="btn btn-primary" id="saveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment entry modal -->
+<div class="modal" id="paymentModal">
+  <div class="modalbox">
+    <h3 id="paymentModalTitle">Log a payment</h3>
+    <div class="sub-date">Record what actually landed in your bank, and which work period it pays for.</div>
+
+    <div class="fieldgroup">
+      <div class="lbl">Date received</div>
+      <input type="text" id="payDate" placeholder="YYYY-MM-DD">
+    </div>
+
+    <div class="fieldgroup">
+      <div class="lbl">Amount (₱)</div>
+      <input type="number" id="payAmount" step="0.01" placeholder="0.00">
+    </div>
+
+    <div class="fieldgroup">
+      <div class="lbl">Type</div>
+      <div class="optrow" id="payTypeRow">
+        <button class="optbtn" data-type="basic">Basic pay</button>
+        <button class="optbtn" data-type="ot">OT pay</button>
+        <button class="optbtn" data-type="mixed">Basic + OT</button>
+      </div>
+    </div>
+
+    <div class="fieldgroup">
+      <div class="lbl">Covers period</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="payPeriodStart" placeholder="Start YYYY-MM-DD">
+        <span style="color:var(--muted)">to</span>
+        <input type="text" id="payPeriodEnd" placeholder="End YYYY-MM-DD">
+      </div>
+    </div>
+
+    <div class="fieldgroup">
+      <div class="lbl">Remarks</div>
+      <textarea id="payRemarks" placeholder="e.g. 2nd cutoff of May, delayed by 3 weeks"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="deletePaymentBtn" style="display:none">Delete</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" id="closePaymentModalBtn">Cancel</button>
+        <button class="btn btn-primary" id="savePaymentBtn">Save payment</button>
       </div>
     </div>
   </div>
@@ -433,13 +501,13 @@ textarea{height:64px;resize:vertical}
     </div>
 
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--hair)">
-      <div class="lbl" style="margin-bottom:10px">Cross-device sync (GitHub Gist)</div>
+      <div class="lbl" style="margin-bottom:10px">Cross-device sync (Firebase)</div>
       <div style="margin-bottom:10px">
-        <label style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px">GitHub token (gist read/write scope)</label>
-        <input type="password" id="cfgToken" placeholder="github_pat_…">
+        <label style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px">Firebase Database URL</label>
+        <input type="text" id="cfgToken" placeholder="https://your-project-default-rtdb.firebaseio.com">
       </div>
       <div style="margin-bottom:10px">
-        <label style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px">Gist ID (leave blank on first device to create one)</label>
+        <label style="display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px">Sync ID (leave blank on first device to generate one)</label>
         <input type="text" id="cfgGistId" placeholder="auto-filled after first connect">
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -455,34 +523,41 @@ textarea{height:64px;resize:vertical}
 
 <script>
 /* ============================================================
-   DATA MODEL (v7)
+   DATA MODEL (v8)
    store: {
-     _version: 7,
+     _version: 8,
      settings: { dailyRate, taxRegular, hdmf, otMult, otTax, holMult },
      entries: {
        "YYYY-MM-DD": {
          status: "present" | "absent" | "leavepaid" | "leaveunpaid" | null,
          otWeekday: bool,
          otHoliday: bool,
-         payday: bool,
-         salaryReceived: bool,
-         receivedAmt: number | null,
+         payday: bool,  // visual reminder only — actual reconciliation lives in store.payments
          remarks: string,
          pay: { basic, otwd, otsh, total, ratesUsed: {...} } // computed & frozen at save time
+       }
+     },
+     payments: {
+       "paymentId": {
+         date: "YYYY-MM-DD",        // when it actually landed
+         amount: number,
+         type: "basic" | "ot" | "mixed",
+         periodStart: "YYYY-MM-DD", // work period this payment covers
+         periodEnd: "YYYY-MM-DD",
+         remarks: string
        }
      }
    }
    ============================================================ */
 
 const STORE_KEY = "ledgerV7";
-const SYNC_KEY = "ledgerSyncConfig"; // {token, gistId} — stays local, never pushed into the gist payload
-const GIST_FILENAME = "ledger-data.json";
+const SYNC_KEY = "ledgerSyncConfig"; // {dbUrl, syncId} — stays local, never pushed into the synced payload
 
 function loadSyncConfig(){
   try{
-    return JSON.parse(localStorage.getItem(SYNC_KEY) || "null") || {token:"", gistId:""};
+    return JSON.parse(localStorage.getItem(SYNC_KEY) || "null") || {dbUrl:"", syncId:""};
   }catch(e){
-    return {token:"", gistId:""};
+    return {dbUrl:"", syncId:""};
   }
 }
 function saveSyncConfig(cfg){
@@ -515,11 +590,12 @@ function loadStore(){
     raw = null;
   }
   if(!raw || typeof raw !== "object"){
-    raw = { _version:7, _updatedAt:0, settings:{...DEFAULT_SETTINGS}, entries:{} };
+    raw = { _version:8, _updatedAt:0, settings:{...DEFAULT_SETTINGS}, entries:{}, payments:{} };
   }
   if(raw._updatedAt == null) raw._updatedAt = 0;
   if(!raw.settings) raw.settings = {...DEFAULT_SETTINGS};
   if(!raw.entries) raw.entries = {};
+  if(!raw.payments) raw.payments = {};
   return raw;
 }
 
@@ -535,28 +611,37 @@ function saveStore(){
 }
 
 /* ============================================================
-   GITHUB GIST SYNC
+   FIREBASE REALTIME DATABASE SYNC
+   Data lives at: {dbUrl}/ledger/{syncId}.json
+   Security rules restrict read/write to exactly that path —
+   the syncId itself functions like a private key, so keep it secret.
    ============================================================ */
-function scheduleSyncPush(){
-  if(!syncConfig.token || !syncConfig.gistId) return;
-  clearTimeout(syncTimer);
-  setSyncStatus("Syncing…");
-  syncTimer = setTimeout(pushToGist, 1200);
+function dbPath(){
+  // strip trailing slash from the database URL if present
+  const base = syncConfig.dbUrl.replace(/\/$/, "");
+  return `${base}/ledger/${syncConfig.syncId}.json`;
 }
 
-async function pushToGist(){
-  if(!syncConfig.token || !syncConfig.gistId) return;
+function genSyncId(){
+  if(crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g,"");
+  return Array.from({length:24}, ()=>Math.floor(Math.random()*36).toString(36)).join("");
+}
+
+function scheduleSyncPush(){
+  if(!syncConfig.dbUrl || !syncConfig.syncId) return;
+  clearTimeout(syncTimer);
+  setSyncStatus("Syncing…");
+  syncTimer = setTimeout(pushToFirebase, 1200);
+}
+
+async function pushToFirebase(){
+  if(!syncConfig.dbUrl || !syncConfig.syncId) return;
   syncing = true;
   try{
-    const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": `Bearer ${syncConfig.token}`,
-        "Accept": "application/vnd.github+json"
-      },
-      body: JSON.stringify({
-        files: { [GIST_FILENAME]: { content: JSON.stringify(store) } }
-      })
+    const res = await fetch(dbPath(), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(store)
     });
     if(!res.ok){
       const body = await res.text().catch(()=>"" );
@@ -564,78 +649,47 @@ async function pushToGist(){
     }
     setSyncStatus("Synced just now");
   }catch(e){
-    console.error("Gist push failed", e);
+    console.error("Firebase push failed", e);
     setSyncStatus("Sync failed: " + e.message);
   }
   syncing = false;
 }
 
-async function pullFromGist(){
-  if(!syncConfig.token || !syncConfig.gistId) return null;
-  const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
-    headers: {
-      "Authorization": `Bearer ${syncConfig.token}`,
-      "Accept": "application/vnd.github+json"
-    }
-  });
+async function pullFromFirebase(){
+  if(!syncConfig.dbUrl || !syncConfig.syncId) return null;
+  const res = await fetch(dbPath());
   if(!res.ok){
     const body = await res.text().catch(()=>"" );
     throw new Error(`HTTP ${res.status} ${res.statusText} — ${body.slice(0,200)}`);
   }
   const data = await res.json();
-  const file = data.files && data.files[GIST_FILENAME];
-  if(!file || !file.content) return null;
-  return JSON.parse(file.content);
-}
-
-async function createGist(){
-  const res = await fetch("https://api.github.com/gists", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${syncConfig.token}`,
-      "Accept": "application/vnd.github+json"
-    },
-    body: JSON.stringify({
-      description: "Ledger salary tracker data (private)",
-      public: false,
-      files: { [GIST_FILENAME]: { content: JSON.stringify(store) } }
-    })
-  });
-  if(!res.ok) throw new Error("HTTP " + res.status);
-  const data = await res.json();
-  return data.id;
+  return data || null; // Firebase returns `null` body for an empty/nonexistent path
 }
 
 async function connectAndSync(){
-  const token = document.getElementById("cfgToken").value.trim();
-  let gistId = document.getElementById("cfgGistId").value.trim();
-  if(!token){ showToast("Paste your GitHub token first."); return; }
+  const dbUrl = document.getElementById("cfgToken").value.trim();
+  let syncId = document.getElementById("cfgGistId").value.trim();
+  if(!dbUrl){ showToast("Paste your Firebase Database URL first."); return; }
 
-  syncConfig = { token, gistId };
+  if(!syncId) syncId = genSyncId();
+
+  syncConfig = { dbUrl, syncId };
   saveSyncConfig(syncConfig);
   setSyncStatus("Connecting…");
 
   try{
-    if(!gistId){
-      gistId = await createGist();
-      syncConfig.gistId = gistId;
-      saveSyncConfig(syncConfig);
-      document.getElementById("cfgGistId").value = gistId;
-      showToast("Created Gist " + gistId + " — copy this ID into your other device.");
-      setSyncStatus("Synced just now");
+    const remote = await pullFromFirebase();
+    if(remote && (remote._updatedAt || 0) > (store._updatedAt || 0)){
+      store = remote;
+      localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      render();
+      showToast("Pulled latest data from Firebase.");
     } else {
-      const remote = await pullFromGist();
-      if(remote && (remote._updatedAt || 0) > (store._updatedAt || 0)){
-        store = remote;
-        localStorage.setItem(STORE_KEY, JSON.stringify(store));
-        render();
-        showToast("Pulled latest data from Gist.");
-      } else {
-        await pushToGist();
-        showToast("Pushed local data to Gist.");
-      }
-      setSyncStatus("Synced just now");
+      await pushToFirebase();
+      showToast("Connected. Sync ID: " + syncId + " — copy this into your other device.");
     }
+    document.getElementById("cfgGistId").value = syncId;
+    setSyncStatus("Synced just now");
   }catch(e){
     console.error(e);
     setSyncStatus("Sync failed: " + e.message);
@@ -644,7 +698,7 @@ async function connectAndSync(){
 }
 
 function disconnectSync(){
-  syncConfig = {token:"", gistId:""};
+  syncConfig = {dbUrl:"", syncId:""};
   saveSyncConfig(syncConfig);
   document.getElementById("cfgToken").value = "";
   document.getElementById("cfgGistId").value = "";
@@ -653,19 +707,19 @@ function disconnectSync(){
 }
 
 async function initialSync(){
-  if(!syncConfig.token || !syncConfig.gistId){
+  if(!syncConfig.dbUrl || !syncConfig.syncId){
     setSyncStatus("Local only");
     return;
   }
   setSyncStatus("Syncing…");
   try{
-    const remote = await pullFromGist();
+    const remote = await pullFromFirebase();
     if(remote && (remote._updatedAt || 0) > (store._updatedAt || 0)){
       store = remote;
       localStorage.setItem(STORE_KEY, JSON.stringify(store));
       render();
     } else if(remote && (store._updatedAt || 0) > (remote._updatedAt || 0)){
-      await pushToGist();
+      await pushToFirebase();
     }
     setSyncStatus("Synced");
   }catch(e){
@@ -731,6 +785,7 @@ function render(){
   renderAgenda();
   renderStats();
   renderTracker();
+  renderPayments();
   document.querySelectorAll("#periodSeg button").forEach(b=>{
     b.classList.toggle("active", b.dataset.period === activePeriod);
   });
@@ -745,8 +800,7 @@ function badgeDotsFor(e){
   let html = "";
   if(e.otWeekday) html += '<span class="dot ot" title="OT weekday"></span>';
   if(e.otHoliday) html += '<span class="dot hol" title="Holiday work"></span>';
-  if(e.payday) html += '<span class="dot pay" title="Payday"></span>';
-  if(e.salaryReceived) html += '<span class="dot rcv" title="Salary received"></span>';
+  if(e.payday) html += '<span class="dot pay" title="Expected payday"></span>';
   return html;
 }
 
@@ -799,7 +853,6 @@ function renderAgenda(){
     if(e.otWeekday) tags.push('<span class="chip-ot">OT</span>');
     if(e.otHoliday) tags.push('<span class="chip-hol">Holiday</span>');
     if(e.payday) tags.push('<span class="chip-pay">Payday</span>');
-    if(e.salaryReceived) tags.push('<span class="chip-rcv">Received</span>');
     row.innerHTML =
       `<span class="agenda-num">${pad(d)}</span>
        <span class="agenda-dow">${dows[new Date(y,m,d).getDay()]}</span>
@@ -817,9 +870,11 @@ function renderStats(){
   const {start,end,y,m} = periodRange();
   let wd=0, abs=0, lvp=0, lvu=0, otwd=0, otsh=0;
   let basic=0, otwdPay=0, otshPay=0;
-  let receivedTotal=0, receivedCount=0;
   let timelineItems = [];
   let nextPaydayKey = null;
+
+  const rangeStartKey = keyOf(y,m,start);
+  const rangeEndKey = keyOf(y,m,end);
 
   for(let d=start; d<=end; d++){
     const key = keyOf(y,m,d);
@@ -838,17 +893,23 @@ function renderStats(){
       otwdPay += e.pay.otwd;
       otshPay += e.pay.otsh;
     }
-    if(e.salaryReceived){
-      receivedCount++;
-      receivedTotal += (e.receivedAmt != null ? Number(e.receivedAmt) : (e.pay ? e.pay.total : 0));
-    }
     if(e.payday && key >= todayKey && !nextPaydayKey){
       nextPaydayKey = key;
     }
-    if(e.payday || e.salaryReceived || e.status==="absent" || e.status==="leavepaid" || e.status==="leaveunpaid" || e.otWeekday || e.otHoliday){
+    if(e.payday || e.status==="absent" || e.status==="leavepaid" || e.status==="leaveunpaid" || e.otWeekday || e.otHoliday){
       timelineItems.push([key, e]);
     }
   }
+
+  // payments whose covered period overlaps the active range at all
+  let receivedTotal = 0, receivedCount = 0;
+  Object.values(store.payments).forEach(p=>{
+    if(!p.periodStart || !p.periodEnd) return;
+    if(p.periodStart <= rangeEndKey && p.periodEnd >= rangeStartKey){
+      receivedTotal += Number(p.amount) || 0;
+      receivedCount++;
+    }
+  });
 
   const total = basic + otwdPay + otshPay;
 
@@ -866,7 +927,7 @@ function renderStats(){
 
   document.getElementById("totalExpected").innerText = peso(total);
   document.getElementById("totalReceived").innerText = peso(receivedTotal);
-  document.getElementById("receivedCount").innerText = receivedCount + " payout" + (receivedCount===1?"":"s") + " logged";
+  document.getElementById("receivedCount").innerText = receivedCount + " payment" + (receivedCount===1?"":"s") + " covering this period";
 
   const variance = total - receivedTotal;
   const varEl = document.getElementById("variance");
@@ -880,7 +941,7 @@ function renderStats(){
 
   if(nextPaydayKey){
     document.getElementById("nextPayday").innerText = nextPaydayKey;
-    document.getElementById("nextPaydaySub").innerText = "flagged as payday, not yet received";
+    document.getElementById("nextPaydaySub").innerText = "flagged as expected payday";
   } else {
     document.getElementById("nextPayday").innerText = "—";
     document.getElementById("nextPaydaySub").innerText = "no upcoming payday flagged";
@@ -899,7 +960,6 @@ function renderStats(){
       if(e.otWeekday) tags.push('<span class="chip-ot">OT</span>');
       if(e.otHoliday) tags.push('<span class="chip-hol">Holiday</span>');
       if(e.payday) tags.push('<span class="chip-pay">Payday</span>');
-      if(e.salaryReceived) tags.push('<span class="chip-rcv">Received</span>');
       return `<div class="timeline-item"><div class="d">${k}</div><div class="tags">${tags.join("")}</div></div>`;
     }).join("");
   }
@@ -909,24 +969,60 @@ function renderStats(){
    MONTHLY TRACKER (all-time, grouped by calendar year — mirrors
    the Month / Expected / Actual / Difference / Status sheet)
    ============================================================ */
+function splitPaymentAcrossMonths(p){
+  // returns { "YYYY-MM": amountPortion } — splits the payment proportionally
+  // by how many of its covered days fall in each calendar month.
+  const result = {};
+  if(!p.periodStart || !p.periodEnd) return result;
+  const start = new Date(p.periodStart+"T00:00:00");
+  const end = new Date(p.periodEnd+"T00:00:00");
+  if(isNaN(start) || isNaN(end) || end < start) return result;
+
+  const dayCounts = {};
+  let totalDays = 0;
+  let cursor = new Date(start);
+  while(cursor <= end){
+    const ym = `${cursor.getFullYear()}-${pad(cursor.getMonth()+1)}`;
+    dayCounts[ym] = (dayCounts[ym] || 0) + 1;
+    totalDays++;
+    cursor.setDate(cursor.getDate()+1);
+  }
+  Object.entries(dayCounts).forEach(([ym,days])=>{
+    result[ym] = (Number(p.amount)||0) * (days/totalDays);
+  });
+  return result;
+}
+
 function renderTracker(){
   const body = document.getElementById("trackerBody");
 
   // bucket every entry by YYYY-MM
-  const months = {}; // "2026-06" -> {wd,otwd,otsh,basicPay,otwdPay,otshPay,received,receivedCount,remarks:[]}
+  const months = {}; // "2026-06" -> {wd,otwd,otsh,basicPay,otwdPay,otshPay,received,receivedFlag,remarks:[]}
+  function bucket(ym){
+    if(!months[ym]) months[ym] = {wd:0,otwd:0,otsh:0,basicPay:0,otwdPay:0,otshPay:0,received:0,receivedFlag:false,remarks:[]};
+    return months[ym];
+  }
+
   Object.entries(store.entries).forEach(([key, e])=>{
     const ym = key.slice(0,7);
-    if(!months[ym]) months[ym] = {wd:0,otwd:0,otsh:0,basicPay:0,otwdPay:0,otshPay:0,received:0,receivedFlag:false,remarks:[]};
-    const b = months[ym];
+    const b = bucket(ym);
     if(e.status === "present" || e.status === "leavepaid") b.wd++;
     if(e.otWeekday) b.otwd++;
     if(e.otHoliday) b.otsh++;
     if(e.pay){ b.basicPay += e.pay.basic; b.otwdPay += e.pay.otwd; b.otshPay += e.pay.otsh; }
-    if(e.salaryReceived){
-      b.receivedFlag = true;
-      b.received += (e.receivedAmt != null ? Number(e.receivedAmt) : (e.pay ? e.pay.total : 0));
-    }
     if(e.remarks && e.remarks.trim()) b.remarks.push(e.remarks.trim());
+  });
+
+  Object.values(store.payments).forEach(p=>{
+    const portions = splitPaymentAcrossMonths(p);
+    Object.entries(portions).forEach(([ym, amt])=>{
+      const b = bucket(ym);
+      b.received += amt;
+      b.receivedFlag = true;
+    });
+    if(p.remarks && p.remarks.trim()){
+      Object.keys(portions).forEach(ym=> bucket(ym).remarks.push(p.remarks.trim()));
+    }
   });
 
   const ymKeys = Object.keys(months).sort().reverse(); // newest first
@@ -978,6 +1074,94 @@ function renderTracker(){
   body.innerHTML = html;
 }
 
+/* ============================================================
+   PAYMENTS LOG
+   ============================================================ */
+let selectedPaymentId = null;
+let currentPayType = "basic";
+
+function renderPayments(){
+  const body = document.getElementById("paymentsBody");
+  const ids = Object.keys(store.payments).sort((a,b)=> store.payments[b].date.localeCompare(store.payments[a].date));
+  if(ids.length === 0){
+    body.innerHTML = `<tr><td colspan="6" style="font-family:'IBM Plex Sans',Arial,sans-serif;color:var(--muted);padding:16px 10px">No payments logged yet. Click "Log payment" to record what actually landed in your bank.</td></tr>`;
+    return;
+  }
+  const typeLabel = {basic:"Basic pay", ot:"OT pay", mixed:"Basic + OT"};
+  body.innerHTML = ids.map(id=>{
+    const p = store.payments[id];
+    return `<tr style="cursor:pointer" data-pid="${id}">
+      <td>${p.date}</td>
+      <td>${peso(p.amount)}</td>
+      <td class="month-name">${typeLabel[p.type] || p.type}</td>
+      <td>${p.periodStart} → ${p.periodEnd}</td>
+      <td class="remarks">${p.remarks || ""}</td>
+      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" data-edit="${id}">Edit</button></td>
+    </tr>`;
+  }).join("");
+
+  body.querySelectorAll("[data-edit]").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{ e.stopPropagation(); openPaymentModal(btn.dataset.edit); });
+  });
+  body.querySelectorAll("tr[data-pid]").forEach(row=>{
+    row.addEventListener("click", ()=> openPaymentModal(row.dataset.pid));
+  });
+}
+
+function setPayType(type){
+  currentPayType = type;
+  document.querySelectorAll("#payTypeRow .optbtn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.type === type);
+  });
+}
+
+function openPaymentModal(id){
+  selectedPaymentId = id || null;
+  const p = id ? store.payments[id] : null;
+  document.getElementById("paymentModalTitle").innerText = id ? "Edit payment" : "Log a payment";
+  document.getElementById("payDate").value = p ? p.date : todayKey;
+  document.getElementById("payAmount").value = p ? p.amount : "";
+  document.getElementById("payPeriodStart").value = p ? p.periodStart : "";
+  document.getElementById("payPeriodEnd").value = p ? p.periodEnd : "";
+  document.getElementById("payRemarks").value = p ? (p.remarks || "") : "";
+  setPayType(p ? p.type : "basic");
+  document.getElementById("deletePaymentBtn").style.display = id ? "inline-block" : "none";
+  document.getElementById("paymentModal").classList.add("open");
+}
+
+function closePaymentModal(){
+  document.getElementById("paymentModal").classList.remove("open");
+}
+
+function savePayment(){
+  const date = document.getElementById("payDate").value.trim();
+  const amount = Number(document.getElementById("payAmount").value);
+  const periodStart = document.getElementById("payPeriodStart").value.trim();
+  const periodEnd = document.getElementById("payPeriodEnd").value.trim();
+  const remarks = document.getElementById("payRemarks").value;
+
+  if(!date || !amount || !periodStart || !periodEnd){
+    showToast("Date, amount, and the covered period are required.");
+    return;
+  }
+
+  const id = selectedPaymentId || ("p" + Date.now());
+  store.payments[id] = { date, amount, type: currentPayType, periodStart, periodEnd, remarks };
+  saveStore();
+  closePaymentModal();
+  render();
+  showToast("Payment saved.");
+}
+
+function deletePayment(){
+  if(selectedPaymentId){
+    delete store.payments[selectedPaymentId];
+    saveStore();
+  }
+  closePaymentModal();
+  render();
+  showToast("Payment deleted.");
+}
 
 let currentStatus = "";
 
@@ -993,10 +1177,7 @@ function openModal(key){
   document.getElementById("otWeekday").checked = !!e.otWeekday;
   document.getElementById("otHoliday").checked = !!e.otHoliday;
   document.getElementById("payday").checked = !!e.payday;
-  document.getElementById("salaryReceived").checked = !!e.salaryReceived;
-  document.getElementById("receivedAmt").value = e.receivedAmt != null ? e.receivedAmt : "";
   document.getElementById("remarks").value = e.remarks || "";
-  toggleReceivedAmtRow();
   updatePayPreview();
 
   document.getElementById("modal").classList.add("open");
@@ -1012,10 +1193,6 @@ function setStatusButtons(status){
   updatePayPreview();
 }
 
-function toggleReceivedAmtRow(){
-  document.getElementById("receivedAmtRow").style.display =
-    document.getElementById("salaryReceived").checked ? "flex" : "none";
-}
 
 function draftEntry(){
   return {
@@ -1023,8 +1200,6 @@ function draftEntry(){
     otWeekday: document.getElementById("otWeekday").checked,
     otHoliday: document.getElementById("otHoliday").checked,
     payday: document.getElementById("payday").checked,
-    salaryReceived: document.getElementById("salaryReceived").checked,
-    receivedAmt: document.getElementById("receivedAmt").value !== "" ? Number(document.getElementById("receivedAmt").value) : null,
     remarks: document.getElementById("remarks").value
   };
 }
@@ -1051,7 +1226,7 @@ function closeModal(){ document.getElementById("modal").classList.remove("open")
 
 function saveEntry(){
   const draft = draftEntry();
-  const hasAnything = draft.status || draft.otWeekday || draft.otHoliday || draft.payday || draft.salaryReceived || draft.remarks.trim();
+  const hasAnything = draft.status || draft.otWeekday || draft.otHoliday || draft.payday || draft.remarks.trim();
   if(!hasAnything){
     delete store.entries[selectedDate];
   } else {
@@ -1083,8 +1258,8 @@ function openSettings(){
   document.getElementById("cfgOtMult").value = s.otMult;
   document.getElementById("cfgOtTax").value = s.otTax;
   document.getElementById("cfgHolMult").value = s.holMult;
-  document.getElementById("cfgToken").value = syncConfig.token || "";
-  document.getElementById("cfgGistId").value = syncConfig.gistId || "";
+  document.getElementById("cfgToken").value = syncConfig.dbUrl || "";
+  document.getElementById("cfgGistId").value = syncConfig.syncId || "";
   document.getElementById("settingsModal").classList.add("open");
 }
 function closeSettings(){ document.getElementById("settingsModal").classList.remove("open"); }
@@ -1142,9 +1317,10 @@ document.querySelectorAll(".viewtabs button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     document.querySelectorAll(".viewtabs button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    const isTracker = btn.dataset.view === "tracker";
-    document.getElementById("calendarView").style.display = isTracker ? "none" : "block";
-    document.getElementById("trackerView").style.display = isTracker ? "block" : "none";
+    const view = btn.dataset.view;
+    document.getElementById("calendarView").style.display = view === "calendar" ? "block" : "none";
+    document.getElementById("trackerView").style.display = view === "tracker" ? "block" : "none";
+    document.getElementById("paymentsView").style.display = view === "payments" ? "block" : "none";
   });
 });
 
@@ -1167,14 +1343,20 @@ document.getElementById("statusRow").addEventListener("click", e=>{
 ["otWeekday","otHoliday","payday"].forEach(id=>{
   document.getElementById(id).addEventListener("change", updatePayPreview);
 });
-document.getElementById("salaryReceived").addEventListener("change", ()=>{
-  toggleReceivedAmtRow();
-  updatePayPreview();
-});
 
 document.getElementById("saveBtn").onclick = saveEntry;
 document.getElementById("closeModalBtn").onclick = closeModal;
 document.getElementById("clearDayBtn").onclick = clearDay;
+
+document.getElementById("addPaymentBtn").onclick = () => openPaymentModal(null);
+document.getElementById("closePaymentModalBtn").onclick = closePaymentModal;
+document.getElementById("savePaymentBtn").onclick = savePayment;
+document.getElementById("deletePaymentBtn").onclick = deletePayment;
+document.getElementById("payTypeRow").addEventListener("click", e=>{
+  const btn = e.target.closest(".optbtn");
+  if(!btn) return;
+  setPayType(btn.dataset.type);
+});
 
 document.getElementById("settingsBtn").onclick = openSettings;
 document.getElementById("closeSettingsBtn").onclick = closeSettings;
@@ -1182,24 +1364,24 @@ document.getElementById("saveSettingsBtn").onclick = saveSettings;
 document.getElementById("connectSyncBtn").onclick = connectAndSync;
 document.getElementById("disconnectSyncBtn").onclick = disconnectSync;
 document.getElementById("syncNowBtn").onclick = async () => {
-  if(!syncConfig.token || !syncConfig.gistId){ showToast("Set up sync in Settings first."); return; }
+  if(!syncConfig.dbUrl || !syncConfig.syncId){ showToast("Set up sync in Settings first."); return; }
   setSyncStatus("Syncing…");
   try{
-    const remote = await pullFromGist();
+    const remote = await pullFromFirebase();
     if(remote && (remote._updatedAt||0) > (store._updatedAt||0)){
       store = remote;
       localStorage.setItem(STORE_KEY, JSON.stringify(store));
       render();
-      showToast("Pulled latest from Gist.");
+      showToast("Pulled latest from Firebase.");
     } else {
-      await pushToGist();
-      showToast("Pushed latest to Gist.");
+      await pushToFirebase();
+      showToast("Pushed latest to Firebase.");
     }
     setSyncStatus("Synced just now");
   }catch(e){
     console.error(e);
     setSyncStatus("Sync failed");
-    showToast("Sync failed — check connection/token.");
+    showToast("Sync failed — check connection/URL.");
   }
 };
 

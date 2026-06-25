@@ -228,6 +228,21 @@ textarea{height:64px;resize:vertical}
   padding:10px 18px;border-radius:8px;font-size:13px;z-index:60;opacity:0;transition:opacity .2s;
 }
 .toast.show{opacity:1}
+
+/* ---------- calendar picker for date ranges ---------- */
+.date-picker{background:var(--paper2);border:1px solid var(--hair);border-radius:8px;padding:10px;margin-top:6px}
+.date-picker-month{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
+.date-picker-dow{text-align:center;font-size:10px;color:var(--muted);padding:4px 0;font-weight:600}
+.date-picker-day{
+  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  background:var(--paper3);border:1px solid transparent;border-radius:4px;cursor:pointer;
+  font-size:12px;color:var(--text);transition:all .15s;
+}
+.date-picker-day:hover{border-color:var(--gold);color:var(--gold)}
+.date-picker-day.selected{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600}
+.date-picker-day.in-range{background:var(--gold-soft);opacity:.5}
+.date-picker-day.empty{background:transparent;cursor:default;border:none}
+.date-picker-day:hover.empty{border:none}
 .filebtn{display:inline-block}
 </style>
 </head>
@@ -247,6 +262,7 @@ textarea{height:64px;resize:vertical}
     </div>
     <button class="iconbtn" id="prevBtn">‹</button>
     <button class="iconbtn" id="nextBtn">›</button>
+    <button class="iconbtn" id="addPaymentBtn">💳 Add Payment</button>
     <button class="iconbtn" id="settingsBtn">⚙ Settings</button>
     <button class="iconbtn" id="syncNowBtn" title="Sync now">⟲ <span id="headerSyncStatus">Local only</span></button>
     <button class="iconbtn" id="exportBtn">⭳ Export</button>
@@ -271,9 +287,9 @@ textarea{height:64px;resize:vertical}
     <div class="sub">expected − received</div>
   </div>
   <div class="stub-cell">
-    <div class="k">Next payday</div>
+    <div class="k">Last payment</div>
     <div class="v small mono" id="nextPayday">—</div>
-    <div class="sub" id="nextPaydaySub">no upcoming payday flagged</div>
+    <div class="sub" id="nextPaydaySub">no payments logged</div>
   </div>
 </div>
 
@@ -308,8 +324,6 @@ textarea{height:64px;resize:vertical}
       <div class="legend" style="margin-top:8px">
         <div class="item"><span class="dot" style="background:var(--green)"></span>Present (left border)</div>
         <div class="item"><span class="dot" style="background:var(--rust)"></span>Absent (left border)</div>
-        <div class="item"><span class="dot" style="background:var(--blue)"></span>Paid leave (left border)</div>
-        <div class="item"><span class="dot" style="background:var(--amber)"></span>Unpaid leave (left border)</div>
       </div>
     </div>
 
@@ -324,7 +338,6 @@ textarea{height:64px;resize:vertical}
       <div class="viewtabs">
         <button data-view="calendar" class="active">Calendar</button>
         <button data-view="tracker">Monthly Tracker</button>
-        <button data-view="payments">Payments</button>
       </div>
 
       <div id="calendarView">
@@ -361,27 +374,7 @@ textarea{height:64px;resize:vertical}
         </div>
       </div>
 
-      <div id="paymentsView" style="display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <span class="label" style="color:var(--muted);font-size:13px">Log actual money received — separate from when you earned it.</span>
-          <button class="btn btn-primary" id="addPaymentBtn">+ Log payment</button>
-        </div>
-        <div class="tracker-wrap">
-          <table class="tracker">
-            <thead>
-              <tr>
-                <th>Date received</th>
-                <th>Amount</th>
-                <th>Type</th>
-                <th>Covers period</th>
-                <th>Remarks</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="paymentsBody"></tbody>
-          </table>
-        </div>
-      </div>
+
     </div>
   </div>
 </div>
@@ -399,9 +392,6 @@ textarea{height:64px;resize:vertical}
       <div class="optrow" id="statusRow">
         <button class="optbtn sel-present" data-status="present">Present</button>
         <button class="optbtn sel-absent" data-status="absent">Absent</button>
-        <button class="optbtn sel-leavepaid" data-status="leavepaid">Paid leave</button>
-        <button class="optbtn sel-leaveunpaid" data-status="leaveunpaid">Unpaid leave</button>
-        <button class="optbtn sel-none" data-status="">None</button>
       </div>
     </div>
 
@@ -411,10 +401,7 @@ textarea{height:64px;resize:vertical}
       <div class="checkrow"><input type="checkbox" id="otHoliday"><label for="otHoliday">Saturday / holiday work (full day @ 1.5×, taxed 8%)</label></div>
     </div>
 
-    <div class="fieldgroup">
-      <div class="lbl">Payroll</div>
-      <div class="checkrow"><input type="checkbox" id="payday"><label for="payday">Expected payday (reminder only — log actual payments in the Payments tab)</label></div>
-    </div>
+
 
     <div class="fieldgroup">
       <div class="lbl">Remarks</div>
@@ -460,10 +447,15 @@ textarea{height:64px;resize:vertical}
 
     <div class="fieldgroup">
       <div class="lbl">Covers period</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="text" id="payPeriodStart" placeholder="Start YYYY-MM-DD">
-        <span style="color:var(--muted)">to</span>
-        <input type="text" id="payPeriodEnd" placeholder="End YYYY-MM-DD">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1">
+          <input type="text" id="payPeriodStart" placeholder="Start YYYY-MM-DD" readonly style="cursor:pointer">
+          <div class="date-picker" id="startDatePicker" style="display:none"></div>
+        </div>
+        <div style="flex:1">
+          <input type="text" id="payPeriodEnd" placeholder="End YYYY-MM-DD" readonly style="cursor:pointer">
+          <div class="date-picker" id="endDatePicker" style="display:none"></div>
+        </div>
       </div>
     </div>
 
@@ -800,7 +792,6 @@ function badgeDotsFor(e){
   let html = "";
   if(e.otWeekday) html += '<span class="dot ot" title="OT weekday"></span>';
   if(e.otHoliday) html += '<span class="dot hol" title="Holiday work"></span>';
-  if(e.payday) html += '<span class="dot pay" title="Expected payday"></span>';
   return html;
 }
 
@@ -810,6 +801,14 @@ function renderCalendar(){
   const y = current.getFullYear(), m = current.getMonth();
   const first = new Date(y,m,1).getDay();
   const days = new Date(y,m+1,0).getDate();
+
+  // Create map of dates that have payments
+  const paymentDates = {};
+  Object.values(store.payments).forEach(p=>{
+    if(!p.dateReceived || !p.periodStart || !p.periodEnd) return;
+    // Mark the payment received date
+    paymentDates[p.dateReceived] = true;
+  });
 
   for(let i=0;i<first;i++){
     const blank = document.createElement("div");
@@ -823,10 +822,14 @@ function renderCalendar(){
     const box = document.createElement("div");
     box.className = "day" + (e.status ? " st-"+e.status : "") + (key===todayKey ? " today" : "");
     const payTotal = e.pay ? e.pay.total : 0;
+    let paymentDot = "";
+    if(paymentDates[key]){
+      paymentDot = '<span class="dot pay" title="Payment received" style="background:var(--gold)"></span>';
+    }
     box.innerHTML =
       `<div style="display:flex;justify-content:space-between;align-items:flex-start">
          <span class="daynum">${d}</span>
-         <div class="dotrow">${badgeDotsFor(e)}</div>
+         <div class="dotrow">${badgeDotsFor(e)}${paymentDot}</div>
        </div>
        <div class="daypay">${payTotal ? peso(payTotal) : ""}</div>`;
     box.onclick = () => openModal(key);
@@ -852,7 +855,6 @@ function renderAgenda(){
     if(e.status==="leaveunpaid") tags.push('<span class="chip-leaveunpaid">Unpaid leave</span>');
     if(e.otWeekday) tags.push('<span class="chip-ot">OT</span>');
     if(e.otHoliday) tags.push('<span class="chip-hol">Holiday</span>');
-    if(e.payday) tags.push('<span class="chip-pay">Payday</span>');
     row.innerHTML =
       `<span class="agenda-num">${pad(d)}</span>
        <span class="agenda-dow">${dows[new Date(y,m,d).getDay()]}</span>
@@ -871,7 +873,6 @@ function renderStats(){
   let wd=0, abs=0, lvp=0, lvu=0, otwd=0, otsh=0;
   let basic=0, otwdPay=0, otshPay=0;
   let timelineItems = [];
-  let nextPaydayKey = null;
 
   const rangeStartKey = keyOf(y,m,start);
   const rangeEndKey = keyOf(y,m,end);
@@ -893,10 +894,7 @@ function renderStats(){
       otwdPay += e.pay.otwd;
       otshPay += e.pay.otsh;
     }
-    if(e.payday && key >= todayKey && !nextPaydayKey){
-      nextPaydayKey = key;
-    }
-    if(e.payday || e.status==="absent" || e.status==="leavepaid" || e.status==="leaveunpaid" || e.otWeekday || e.otHoliday){
+    if(e.status==="absent" || e.status==="leavepaid" || e.status==="leaveunpaid" || e.otWeekday || e.otHoliday){
       timelineItems.push([key, e]);
     }
   }
@@ -939,12 +937,22 @@ function renderStats(){
     : `${current.toLocaleString("default",{month:"short"})} ${start}–${end}, ${y}`;
   document.getElementById("periodLabel").innerText = label;
 
-  if(nextPaydayKey){
-    document.getElementById("nextPayday").innerText = nextPaydayKey;
-    document.getElementById("nextPaydaySub").innerText = "flagged as expected payday";
+  // Find the most recent payment
+  let lastPaymentDate = null;
+  Object.values(store.payments).forEach(p=>{
+    if(p.dateReceived){
+      if(!lastPaymentDate || p.dateReceived > lastPaymentDate){
+        lastPaymentDate = p.dateReceived;
+      }
+    }
+  });
+
+  if(lastPaymentDate){
+    document.getElementById("nextPayday").innerText = lastPaymentDate;
+    document.getElementById("nextPaydaySub").innerText = "last payment logged";
   } else {
     document.getElementById("nextPayday").innerText = "—";
-    document.getElementById("nextPaydaySub").innerText = "no upcoming payday flagged";
+    document.getElementById("nextPaydaySub").innerText = "no payments logged";
   }
 
   timelineItems.sort((a,b)=> a[0] < b[0] ? 1 : -1);
@@ -959,7 +967,6 @@ function renderStats(){
       if(e.status==="leaveunpaid") tags.push('<span class="chip-leaveunpaid">Unpaid leave</span>');
       if(e.otWeekday) tags.push('<span class="chip-ot">OT</span>');
       if(e.otHoliday) tags.push('<span class="chip-hol">Holiday</span>');
-      if(e.payday) tags.push('<span class="chip-pay">Payday</span>');
       return `<div class="timeline-item"><div class="d">${k}</div><div class="tags">${tags.join("")}</div></div>`;
     }).join("");
   }
@@ -1115,6 +1122,49 @@ function setPayType(type){
   });
 }
 
+function renderDatePicker(containerId, inputId, isEndDate = false){
+  const input = document.getElementById(inputId);
+  const container = document.getElementById(containerId);
+  const currentDate = input.value || todayKey;
+  const [y, m, d] = currentDate.split("-").map(Number);
+  
+  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
+  
+  // Days of week header
+  const dows = ["S","M","T","W","T","F","S"];
+  dows.forEach(dow => {
+    html += `<div class="date-picker-dow">${dow}</div>`;
+  });
+  
+  // Get first day of month and number of days
+  const first = new Date(y, m-1, 1).getDay();
+  const days = new Date(y, m, 0).getDate();
+  
+  // Empty cells
+  for(let i = 0; i < first; i++){
+    html += `<div class="date-picker-day empty"></div>`;
+  }
+  
+  // Days
+  for(let day = 1; day <= days; day++){
+    const dateKey = `${y}-${pad(m)}-${pad(day)}`;
+    const isSelected = dateKey === currentDate;
+    const className = isSelected ? "selected" : "";
+    html += `<div class="date-picker-day ${className}" data-date="${dateKey}">${day}</div>`;
+  }
+  
+  html += `</div>`;
+  container.innerHTML = html;
+  
+  // Add click handlers
+  container.querySelectorAll(".date-picker-day:not(.empty)").forEach(el => {
+    el.addEventListener("click", () => {
+      document.getElementById(inputId).value = el.dataset.date;
+      container.style.display = "none";
+    });
+  });
+}
+
 function openPaymentModal(id){
   selectedPaymentId = id || null;
   const p = id ? store.payments[id] : null;
@@ -1176,7 +1226,6 @@ function openModal(key){
   setStatusButtons(currentStatus);
   document.getElementById("otWeekday").checked = !!e.otWeekday;
   document.getElementById("otHoliday").checked = !!e.otHoliday;
-  document.getElementById("payday").checked = !!e.payday;
   document.getElementById("remarks").value = e.remarks || "";
   updatePayPreview();
 
@@ -1199,7 +1248,6 @@ function draftEntry(){
     status: currentStatus || null,
     otWeekday: document.getElementById("otWeekday").checked,
     otHoliday: document.getElementById("otHoliday").checked,
-    payday: document.getElementById("payday").checked,
     remarks: document.getElementById("remarks").value
   };
 }
@@ -1226,7 +1274,7 @@ function closeModal(){ document.getElementById("modal").classList.remove("open")
 
 function saveEntry(){
   const draft = draftEntry();
-  const hasAnything = draft.status || draft.otWeekday || draft.otHoliday || draft.payday || draft.remarks.trim();
+  const hasAnything = draft.status || draft.otWeekday || draft.otHoliday || draft.remarks.trim();
   if(!hasAnything){
     delete store.entries[selectedDate];
   } else {
@@ -1320,7 +1368,6 @@ document.querySelectorAll(".viewtabs button").forEach(btn=>{
     const view = btn.dataset.view;
     document.getElementById("calendarView").style.display = view === "calendar" ? "block" : "none";
     document.getElementById("trackerView").style.display = view === "tracker" ? "block" : "none";
-    document.getElementById("paymentsView").style.display = view === "payments" ? "block" : "none";
   });
 });
 
@@ -1340,7 +1387,7 @@ document.getElementById("statusRow").addEventListener("click", e=>{
   setStatusButtons(btn.dataset.status);
 });
 
-["otWeekday","otHoliday","payday"].forEach(id=>{
+["otWeekday","otHoliday"].forEach(id=>{
   document.getElementById(id).addEventListener("change", updatePayPreview);
 });
 
@@ -1356,6 +1403,23 @@ document.getElementById("payTypeRow").addEventListener("click", e=>{
   const btn = e.target.closest(".optbtn");
   if(!btn) return;
   setPayType(btn.dataset.type);
+});
+
+// Date picker toggling
+document.getElementById("payPeriodStart").addEventListener("click", () => {
+  const picker = document.getElementById("startDatePicker");
+  picker.style.display = picker.style.display === "none" ? "block" : "none";
+  if(picker.style.display === "block"){
+    renderDatePicker("startDatePicker", "payPeriodStart", false);
+  }
+});
+
+document.getElementById("payPeriodEnd").addEventListener("click", () => {
+  const picker = document.getElementById("endDatePicker");
+  picker.style.display = picker.style.display === "none" ? "block" : "none";
+  if(picker.style.display === "block"){
+    renderDatePicker("endDatePicker", "payPeriodEnd", true);
+  }
 });
 
 document.getElementById("settingsBtn").onclick = openSettings;

@@ -63,7 +63,7 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 
 /* ---------- payslip stub band ---------- */
 .stub{
-  display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;
+  display:grid;grid-template-columns:1.3fr 1fr 1fr;
   background:var(--paper);border:1px solid var(--hair);border-radius:var(--radius);
   overflow:hidden;margin-bottom:22px;position:relative;
 }
@@ -121,8 +121,6 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .day.today{box-shadow:inset 0 0 0 1px var(--gold)}
 .day.st-present{border-left-color:var(--green)}
 .day.st-absent{border-left-color:var(--rust)}
-.day.st-leavepaid{border-left-color:var(--blue)}
-.day.st-leaveunpaid{border-left-color:var(--amber)}
 .daynum{font-size:12.5px;color:var(--text);font-family:'IBM Plex Mono',monospace}
 .dotrow{display:flex;gap:3px;justify-content:flex-end}
 .dotrow .dot{width:6px;height:6px}
@@ -133,8 +131,6 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .agenda-day{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--hair);cursor:pointer;border-left:3px solid transparent}
 .agenda-day.st-present{border-left-color:var(--green)}
 .agenda-day.st-absent{border-left-color:var(--rust)}
-.agenda-day.st-leavepaid{border-left-color:var(--blue)}
-.agenda-day.st-leaveunpaid{border-left-color:var(--amber)}
 .agenda-num{font-family:'IBM Plex Mono',monospace;font-size:13px;width:30px;color:var(--muted)}
 .agenda-dow{font-size:11px;color:var(--muted);width:36px}
 .agenda-tags{flex:1;display:flex;gap:4px;flex-wrap:wrap}
@@ -154,7 +150,6 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .chip-rcv{background:var(--green-soft);color:var(--green)}
 .chip-abs{background:var(--rust-soft);color:var(--rust)}
 .chip-leave{background:var(--blue-soft);color:var(--blue)}
-.chip-leaveunpaid{background:var(--amber-soft);color:var(--amber)}
 
 /* ---------- view tabs ---------- */
 .viewtabs{display:flex;gap:8px;margin-bottom:14px}
@@ -201,8 +196,6 @@ table.tracker td.remarks{font-family:'IBM Plex Sans',Arial,sans-serif;color:var(
 }
 .optbtn.sel-present.active{background:var(--green-soft);border-color:var(--green);color:var(--green)}
 .optbtn.sel-absent.active{background:var(--rust-soft);border-color:var(--rust);color:var(--rust)}
-.optbtn.sel-leavepaid.active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
-.optbtn.sel-leaveunpaid.active{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
 .optbtn.sel-none.active{background:var(--paper3);border-color:var(--muted);color:var(--text)}
 .optbtn.active{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 .checkrow{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13.5px}
@@ -228,21 +221,6 @@ textarea{height:64px;resize:vertical}
   padding:10px 18px;border-radius:8px;font-size:13px;z-index:60;opacity:0;transition:opacity .2s;
 }
 .toast.show{opacity:1}
-
-/* ---------- calendar picker for date ranges ---------- */
-.date-picker{background:var(--paper2);border:1px solid var(--hair);border-radius:8px;padding:10px;margin-top:6px}
-.date-picker-month{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
-.date-picker-dow{text-align:center;font-size:10px;color:var(--muted);padding:4px 0;font-weight:600}
-.date-picker-day{
-  aspect-ratio:1;display:flex;align-items:center;justify-content:center;
-  background:var(--paper3);border:1px solid transparent;border-radius:4px;cursor:pointer;
-  font-size:12px;color:var(--text);transition:all .15s;
-}
-.date-picker-day:hover{border-color:var(--gold);color:var(--gold)}
-.date-picker-day.selected{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600}
-.date-picker-day.in-range{background:var(--gold-soft);opacity:.5}
-.date-picker-day.empty{background:transparent;cursor:default;border:none}
-.date-picker-day:hover.empty{border:none}
 .filebtn{display:inline-block}
 </style>
 </head>
@@ -262,7 +240,6 @@ textarea{height:64px;resize:vertical}
     </div>
     <button class="iconbtn" id="prevBtn">‹</button>
     <button class="iconbtn" id="nextBtn">›</button>
-    <button class="iconbtn" id="addPaymentBtn">💳 Add Payment</button>
     <button class="iconbtn" id="settingsBtn">⚙ Settings</button>
     <button class="iconbtn" id="syncNowBtn" title="Sync now">⟲ <span id="headerSyncStatus">Local only</span></button>
     <button class="iconbtn" id="exportBtn">⭳ Export</button>
@@ -286,15 +263,16 @@ textarea{height:64px;resize:vertical}
     <div class="v mono" id="variance">₱0.00</div>
     <div class="sub">expected − received</div>
   </div>
-  <div class="stub-cell">
-    <div class="k">Last payment</div>
-    <div class="v small mono" id="nextPayday">—</div>
-    <div class="sub" id="nextPaydaySub">no payments logged</div>
-  </div>
 </div>
 
 <div class="grid">
   <div>
+    <div class="card">
+      <h3>Payments</h3>
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Record actual money received, separate from when it was earned.</p>
+      <button class="btn btn-primary" id="logPaymentBtn" style="width:100%">₱ Log payment</button>
+    </div>
+
     <div class="card">
       <h3>Breakdown</h3>
       <div class="row"><span>Basic pay</span><span class="amt" id="basic">₱0.00</span></div>
@@ -307,8 +285,6 @@ textarea{height:64px;resize:vertical}
       <h3>Attendance</h3>
       <div class="row"><span>Working days</span><span class="amt" id="wd">0</span></div>
       <div class="row"><span>Absences</span><span class="amt" id="abs">0</span></div>
-      <div class="row"><span>Paid leave days</span><span class="amt" id="lvp">0</span></div>
-      <div class="row"><span>Unpaid leave days</span><span class="amt" id="lvu">0</span></div>
       <div class="row"><span>OT weekdays</span><span class="amt" id="otwd">0</span></div>
       <div class="row"><span>Holiday work days</span><span class="amt" id="otsh">0</span></div>
     </div>
@@ -373,8 +349,6 @@ textarea{height:64px;resize:vertical}
           </table>
         </div>
       </div>
-
-
     </div>
   </div>
 </div>
@@ -392,6 +366,7 @@ textarea{height:64px;resize:vertical}
       <div class="optrow" id="statusRow">
         <button class="optbtn sel-present" data-status="present">Present</button>
         <button class="optbtn sel-absent" data-status="absent">Absent</button>
+        <button class="optbtn sel-none" data-status="">None</button>
       </div>
     </div>
 
@@ -400,8 +375,6 @@ textarea{height:64px;resize:vertical}
       <div class="checkrow"><input type="checkbox" id="otWeekday"><label for="otWeekday">OT weekday (2 hrs @ 1.25×, taxed 8%)</label></div>
       <div class="checkrow"><input type="checkbox" id="otHoliday"><label for="otHoliday">Saturday / holiday work (full day @ 1.5×, taxed 8%)</label></div>
     </div>
-
-
 
     <div class="fieldgroup">
       <div class="lbl">Remarks</div>
@@ -428,7 +401,7 @@ textarea{height:64px;resize:vertical}
 
     <div class="fieldgroup">
       <div class="lbl">Date received</div>
-      <input type="text" id="payDate" placeholder="YYYY-MM-DD">
+      <input type="date" id="payDate">
     </div>
 
     <div class="fieldgroup">
@@ -447,15 +420,10 @@ textarea{height:64px;resize:vertical}
 
     <div class="fieldgroup">
       <div class="lbl">Covers period</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <div style="flex:1">
-          <input type="text" id="payPeriodStart" placeholder="Start YYYY-MM-DD" readonly style="cursor:pointer">
-          <div class="date-picker" id="startDatePicker" style="display:none"></div>
-        </div>
-        <div style="flex:1">
-          <input type="text" id="payPeriodEnd" placeholder="End YYYY-MM-DD" readonly style="cursor:pointer">
-          <div class="date-picker" id="endDatePicker" style="display:none"></div>
-        </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="payPeriodStart">
+        <span style="color:var(--muted)">to</span>
+        <input type="date" id="payPeriodEnd">
       </div>
     </div>
 
@@ -521,10 +489,9 @@ textarea{height:64px;resize:vertical}
      settings: { dailyRate, taxRegular, hdmf, otMult, otTax, holMult },
      entries: {
        "YYYY-MM-DD": {
-         status: "present" | "absent" | "leavepaid" | "leaveunpaid" | null,
+         status: "present" | "absent" | null,
          otWeekday: bool,
          otHoliday: bool,
-         payday: bool,  // visual reminder only — actual reconciliation lives in store.payments
          remarks: string,
          pay: { basic, otwd, otsh, total, ratesUsed: {...} } // computed & frozen at save time
        }
@@ -742,7 +709,7 @@ function showToast(msg){
 function computePay(entry, settings){
   const r = settings;
   let basic = 0, otwd = 0, otsh = 0;
-  if(entry.status === "present" || entry.status === "leavepaid"){
+  if(entry.status === "present"){
     basic = (r.dailyRate * (1 - r.taxRegular/100));
   }
   if(entry.otWeekday){
@@ -777,7 +744,6 @@ function render(){
   renderAgenda();
   renderStats();
   renderTracker();
-  renderPayments();
   document.querySelectorAll("#periodSeg button").forEach(b=>{
     b.classList.toggle("active", b.dataset.period === activePeriod);
   });
@@ -795,20 +761,16 @@ function badgeDotsFor(e){
   return html;
 }
 
+function paymentsOnDate(key){
+  return Object.entries(store.payments).filter(([id,p]) => p.date === key);
+}
+
 function renderCalendar(){
   const cal = document.getElementById("calendar");
   cal.innerHTML = "";
   const y = current.getFullYear(), m = current.getMonth();
   const first = new Date(y,m,1).getDay();
   const days = new Date(y,m+1,0).getDate();
-
-  // Create map of dates that have payments
-  const paymentDates = {};
-  Object.values(store.payments).forEach(p=>{
-    if(!p.dateReceived || !p.periodStart || !p.periodEnd) return;
-    // Mark the payment received date
-    paymentDates[p.dateReceived] = true;
-  });
 
   for(let i=0;i<first;i++){
     const blank = document.createElement("div");
@@ -822,19 +784,27 @@ function renderCalendar(){
     const box = document.createElement("div");
     box.className = "day" + (e.status ? " st-"+e.status : "") + (key===todayKey ? " today" : "");
     const payTotal = e.pay ? e.pay.total : 0;
-    let paymentDot = "";
-    if(paymentDates[key]){
-      paymentDot = '<span class="dot pay" title="Payment received" style="background:var(--gold)"></span>';
-    }
+    const payments = paymentsOnDate(key);
+    const paymentBadge = payments.length
+      ? `<span class="dot rcv payment-marker" data-pdate="${key}" title="₱ received — click to view/edit" style="cursor:pointer"></span>`
+      : "";
     box.innerHTML =
       `<div style="display:flex;justify-content:space-between;align-items:flex-start">
          <span class="daynum">${d}</span>
-         <div class="dotrow">${badgeDotsFor(e)}${paymentDot}</div>
+         <div class="dotrow">${badgeDotsFor(e)}${paymentBadge}</div>
        </div>
        <div class="daypay">${payTotal ? peso(payTotal) : ""}</div>`;
     box.onclick = () => openModal(key);
     cal.appendChild(box);
   }
+
+  cal.querySelectorAll(".payment-marker").forEach(el=>{
+    el.addEventListener("click", (ev)=>{
+      ev.stopPropagation();
+      const list = paymentsOnDate(el.dataset.pdate);
+      if(list.length) openPaymentModal(list[0][0]);
+    });
+  });
 }
 
 function renderAgenda(){
@@ -851,16 +821,24 @@ function renderAgenda(){
     row.className = "agenda-day" + (e.status ? " st-"+e.status : "");
     const tags = [];
     if(e.status==="absent") tags.push('<span class="chip-abs">Absent</span>');
-    if(e.status==="leavepaid") tags.push('<span class="chip-leave">Paid leave</span>');
-    if(e.status==="leaveunpaid") tags.push('<span class="chip-leaveunpaid">Unpaid leave</span>');
     if(e.otWeekday) tags.push('<span class="chip-ot">OT</span>');
     if(e.otHoliday) tags.push('<span class="chip-hol">Holiday</span>');
+    const payments = paymentsOnDate(key);
+    if(payments.length) tags.push('<span class="chip-rcv payment-marker" data-pdate="'+key+'">₱ Received</span>');
     row.innerHTML =
       `<span class="agenda-num">${pad(d)}</span>
        <span class="agenda-dow">${dows[new Date(y,m,d).getDay()]}</span>
        <span class="agenda-tags">${tags.join("") || '<span style="color:var(--muted);font-size:11px">—</span>'}</span>
        <span class="mono" style="font-size:12px;color:var(--muted)">${e.pay && e.pay.total ? peso(e.pay.total) : ""}</span>`;
-    row.onclick = () => openModal(key);
+    row.onclick = (ev) => {
+      if(ev.target.closest(".payment-marker")){
+        ev.stopPropagation();
+        const list = paymentsOnDate(key);
+        if(list.length) openPaymentModal(list[0][0]);
+        return;
+      }
+      openModal(key);
+    };
     agenda.appendChild(row);
   }
 }
@@ -870,7 +848,7 @@ function renderAgenda(){
    ============================================================ */
 function renderStats(){
   const {start,end,y,m} = periodRange();
-  let wd=0, abs=0, lvp=0, lvu=0, otwd=0, otsh=0;
+  let wd=0, abs=0, otwd=0, otsh=0;
   let basic=0, otwdPay=0, otshPay=0;
   let timelineItems = [];
 
@@ -884,8 +862,6 @@ function renderStats(){
 
     if(e.status === "present") wd++;
     if(e.status === "absent") abs++;
-    if(e.status === "leavepaid") lvp++;
-    if(e.status === "leaveunpaid") lvu++;
     if(e.otWeekday) otwd++;
     if(e.otHoliday) otsh++;
 
@@ -894,7 +870,7 @@ function renderStats(){
       otwdPay += e.pay.otwd;
       otshPay += e.pay.otsh;
     }
-    if(e.status==="absent" || e.status==="leavepaid" || e.status==="leaveunpaid" || e.otWeekday || e.otHoliday){
+    if(e.status==="absent" || e.otWeekday || e.otHoliday){
       timelineItems.push([key, e]);
     }
   }
@@ -913,8 +889,6 @@ function renderStats(){
 
   document.getElementById("wd").innerText = wd;
   document.getElementById("abs").innerText = abs;
-  document.getElementById("lvp").innerText = lvp;
-  document.getElementById("lvu").innerText = lvu;
   document.getElementById("otwd").innerText = otwd;
   document.getElementById("otsh").innerText = otsh;
 
@@ -937,24 +911,6 @@ function renderStats(){
     : `${current.toLocaleString("default",{month:"short"})} ${start}–${end}, ${y}`;
   document.getElementById("periodLabel").innerText = label;
 
-  // Find the most recent payment
-  let lastPaymentDate = null;
-  Object.values(store.payments).forEach(p=>{
-    if(p.dateReceived){
-      if(!lastPaymentDate || p.dateReceived > lastPaymentDate){
-        lastPaymentDate = p.dateReceived;
-      }
-    }
-  });
-
-  if(lastPaymentDate){
-    document.getElementById("nextPayday").innerText = lastPaymentDate;
-    document.getElementById("nextPaydaySub").innerText = "last payment logged";
-  } else {
-    document.getElementById("nextPayday").innerText = "—";
-    document.getElementById("nextPaydaySub").innerText = "no payments logged";
-  }
-
   timelineItems.sort((a,b)=> a[0] < b[0] ? 1 : -1);
   const tl = document.getElementById("timeline");
   if(timelineItems.length === 0){
@@ -963,8 +919,6 @@ function renderStats(){
     tl.innerHTML = timelineItems.slice(0,10).map(([k,e])=>{
       const tags = [];
       if(e.status==="absent") tags.push('<span class="chip-abs">Absent</span>');
-      if(e.status==="leavepaid") tags.push('<span class="chip-leave">Paid leave</span>');
-      if(e.status==="leaveunpaid") tags.push('<span class="chip-leaveunpaid">Unpaid leave</span>');
       if(e.otWeekday) tags.push('<span class="chip-ot">OT</span>');
       if(e.otHoliday) tags.push('<span class="chip-hol">Holiday</span>');
       return `<div class="timeline-item"><div class="d">${k}</div><div class="tags">${tags.join("")}</div></div>`;
@@ -1013,7 +967,7 @@ function renderTracker(){
   Object.entries(store.entries).forEach(([key, e])=>{
     const ym = key.slice(0,7);
     const b = bucket(ym);
-    if(e.status === "present" || e.status === "leavepaid") b.wd++;
+    if(e.status === "present") b.wd++;
     if(e.otWeekday) b.otwd++;
     if(e.otHoliday) b.otsh++;
     if(e.pay){ b.basicPay += e.pay.basic; b.otwdPay += e.pay.otwd; b.otshPay += e.pay.otsh; }
@@ -1087,81 +1041,10 @@ function renderTracker(){
 let selectedPaymentId = null;
 let currentPayType = "basic";
 
-function renderPayments(){
-  const body = document.getElementById("paymentsBody");
-  const ids = Object.keys(store.payments).sort((a,b)=> store.payments[b].date.localeCompare(store.payments[a].date));
-  if(ids.length === 0){
-    body.innerHTML = `<tr><td colspan="6" style="font-family:'IBM Plex Sans',Arial,sans-serif;color:var(--muted);padding:16px 10px">No payments logged yet. Click "Log payment" to record what actually landed in your bank.</td></tr>`;
-    return;
-  }
-  const typeLabel = {basic:"Basic pay", ot:"OT pay", mixed:"Basic + OT"};
-  body.innerHTML = ids.map(id=>{
-    const p = store.payments[id];
-    return `<tr style="cursor:pointer" data-pid="${id}">
-      <td>${p.date}</td>
-      <td>${peso(p.amount)}</td>
-      <td class="month-name">${typeLabel[p.type] || p.type}</td>
-      <td>${p.periodStart} → ${p.periodEnd}</td>
-      <td class="remarks">${p.remarks || ""}</td>
-      <td><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" data-edit="${id}">Edit</button></td>
-    </tr>`;
-  }).join("");
-
-  body.querySelectorAll("[data-edit]").forEach(btn=>{
-    btn.addEventListener("click", (e)=>{ e.stopPropagation(); openPaymentModal(btn.dataset.edit); });
-  });
-  body.querySelectorAll("tr[data-pid]").forEach(row=>{
-    row.addEventListener("click", ()=> openPaymentModal(row.dataset.pid));
-  });
-}
-
 function setPayType(type){
   currentPayType = type;
   document.querySelectorAll("#payTypeRow .optbtn").forEach(b=>{
     b.classList.toggle("active", b.dataset.type === type);
-  });
-}
-
-function renderDatePicker(containerId, inputId, isEndDate = false){
-  const input = document.getElementById(inputId);
-  const container = document.getElementById(containerId);
-  const currentDate = input.value || todayKey;
-  const [y, m, d] = currentDate.split("-").map(Number);
-  
-  let html = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">`;
-  
-  // Days of week header
-  const dows = ["S","M","T","W","T","F","S"];
-  dows.forEach(dow => {
-    html += `<div class="date-picker-dow">${dow}</div>`;
-  });
-  
-  // Get first day of month and number of days
-  const first = new Date(y, m-1, 1).getDay();
-  const days = new Date(y, m, 0).getDate();
-  
-  // Empty cells
-  for(let i = 0; i < first; i++){
-    html += `<div class="date-picker-day empty"></div>`;
-  }
-  
-  // Days
-  for(let day = 1; day <= days; day++){
-    const dateKey = `${y}-${pad(m)}-${pad(day)}`;
-    const isSelected = dateKey === currentDate;
-    const className = isSelected ? "selected" : "";
-    html += `<div class="date-picker-day ${className}" data-date="${dateKey}">${day}</div>`;
-  }
-  
-  html += `</div>`;
-  container.innerHTML = html;
-  
-  // Add click handlers
-  container.querySelectorAll(".date-picker-day:not(.empty)").forEach(el => {
-    el.addEventListener("click", () => {
-      document.getElementById(inputId).value = el.dataset.date;
-      container.style.display = "none";
-    });
   });
 }
 
@@ -1395,7 +1278,7 @@ document.getElementById("saveBtn").onclick = saveEntry;
 document.getElementById("closeModalBtn").onclick = closeModal;
 document.getElementById("clearDayBtn").onclick = clearDay;
 
-document.getElementById("addPaymentBtn").onclick = () => openPaymentModal(null);
+document.getElementById("logPaymentBtn").onclick = () => openPaymentModal(null);
 document.getElementById("closePaymentModalBtn").onclick = closePaymentModal;
 document.getElementById("savePaymentBtn").onclick = savePayment;
 document.getElementById("deletePaymentBtn").onclick = deletePayment;
@@ -1403,23 +1286,6 @@ document.getElementById("payTypeRow").addEventListener("click", e=>{
   const btn = e.target.closest(".optbtn");
   if(!btn) return;
   setPayType(btn.dataset.type);
-});
-
-// Date picker toggling
-document.getElementById("payPeriodStart").addEventListener("click", () => {
-  const picker = document.getElementById("startDatePicker");
-  picker.style.display = picker.style.display === "none" ? "block" : "none";
-  if(picker.style.display === "block"){
-    renderDatePicker("startDatePicker", "payPeriodStart", false);
-  }
-});
-
-document.getElementById("payPeriodEnd").addEventListener("click", () => {
-  const picker = document.getElementById("endDatePicker");
-  picker.style.display = picker.style.display === "none" ? "block" : "none";
-  if(picker.style.display === "block"){
-    renderDatePicker("endDatePicker", "payPeriodEnd", true);
-  }
 });
 
 document.getElementById("settingsBtn").onclick = openSettings;

@@ -27,6 +27,25 @@
   --amber-soft:#3a2c18;
   --radius:10px;
 }
+html[data-theme="light"]{
+  --ink:#f3f1ea;
+  --paper:#ffffff;
+  --paper2:#f5f3ec;
+  --paper3:#ebe8de;
+  --hair:#dcd8cb;
+  --text:#262420;
+  --muted:#7a7567;
+  --gold:#a8771f;
+  --gold-soft:#f3e4bf;
+  --green:#2f8f5f;
+  --green-soft:#dcf0e5;
+  --rust:#a8442e;
+  --rust-soft:#f6dcd5;
+  --blue:#3766ad;
+  --blue-soft:#dde6f5;
+  --amber:#a86a1f;
+  --amber-soft:#f3e2c4;
+}
 *{box-sizing:border-box}
 body{
   margin:0;
@@ -98,6 +117,21 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .dot.pay{background:var(--gold)}
 .dot.rcv{background:var(--green)}
 
+.legend-group{margin-bottom:16px}
+.legend-group:last-child{margin-bottom:0}
+.legend-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;font-weight:600}
+.legend-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
+.legend-cap{font-size:11px;color:var(--muted);margin-top:1px}
+.swatch{flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.swatch-bar{
+  width:6px;height:30px;border-radius:3px;background:var(--c);
+  box-shadow:0 0 0 1px var(--hair), 8px 0 0 -6px var(--paper2), 8px 0 0 -5px var(--hair);
+}
+.swatch-dot{
+  width:24px;height:24px;border-radius:7px;background:color-mix(in srgb, var(--c) 22%, var(--paper2));
+  border:1px solid var(--c);color:var(--c);font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;
+}
+
 /* timeline */
 .timeline-item{padding:9px 0;border-bottom:1px solid var(--hair);font-size:13px}
 .timeline-item:last-child{border-bottom:none}
@@ -106,19 +140,26 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .empty{color:var(--muted);font-size:13px;padding:8px 0}
 
 /* ---------- calendar ---------- */
-.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
 .cal-head h2{margin:0;font-size:16px;font-weight:600}
+.cal-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .nav{display:flex;gap:6px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .dow{text-align:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-bottom:6px}
 .day{
-  min-height:78px;background:var(--paper2);border-radius:8px;padding:7px 7px 6px;cursor:pointer;
+  min-height:82px;background:var(--paper2);border-radius:8px;padding:7px 7px 6px;cursor:pointer;
   position:relative;border:1px solid transparent;border-left:3px solid transparent;
   display:flex;flex-direction:column;justify-content:space-between;
+  transition:transform .08s ease, border-color .12s ease;
 }
-.day:hover{border-color:var(--hair)}
+.day:hover{border-color:var(--hair);transform:translateY(-1px)}
 .day.empty-cell{background:transparent;cursor:default}
-.day.today{box-shadow:inset 0 0 0 1px var(--gold)}
+.day.empty-cell:hover{transform:none}
+.day.weekend{background:color-mix(in srgb, var(--paper2) 90%, var(--gold) 4%)}
+.day.today{
+  box-shadow:0 0 0 1.5px var(--gold), inset 0 0 0 1px var(--gold);
+}
+.day.today .daynum{color:var(--gold);font-weight:700}
 .day.st-present{border-left-color:var(--green)}
 .day.st-absent{border-left-color:var(--rust)}
 .daynum{font-size:12.5px;color:var(--text);font-family:'IBM Plex Mono',monospace}
@@ -161,13 +202,16 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 
 /* ---------- monthly tracker ---------- */
 .tracker-wrap{overflow-x:auto}
-table.tracker{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+table.tracker{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 table.tracker th{
   text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;
   padding:8px 10px;border-bottom:1px solid var(--hair);white-space:nowrap;
 }
-table.tracker td{padding:9px 10px;border-bottom:1px solid var(--hair);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+table.tracker th.num, table.tracker td.num{text-align:right}
+table.tracker td{padding:9px 10px;border-bottom:1px solid var(--hair);font-family:'IBM Plex Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 table.tracker td.month-name{font-family:'IBM Plex Sans',Arial,sans-serif;font-weight:600;white-space:normal}
+table.tracker td.total-cell{text-align:right}
+table.tracker td.total-cell .sub{display:block;font-size:10.5px;color:var(--muted);font-weight:400;margin-top:1px}
 table.tracker tr.fy-header td{
   background:var(--paper3);color:var(--gold);font-family:'IBM Plex Sans',Arial,sans-serif;
   font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 10px;
@@ -194,6 +238,7 @@ table.tracker td.remarks{font-family:'IBM Plex Sans',Arial,sans-serif;color:var(
   background:var(--paper2);border:1px solid var(--hair);color:var(--text);
   padding:8px 12px;border-radius:7px;font-size:13px;cursor:pointer;
 }
+.optbtn:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
 .optbtn.sel-present.active{background:var(--green-soft);border-color:var(--green);color:var(--green)}
 .optbtn.sel-absent.active{background:var(--rust-soft);border-color:var(--rust);color:var(--rust)}
 .optbtn.sel-none.active{background:var(--paper3);border-color:var(--muted);color:var(--text)}
@@ -233,13 +278,7 @@ textarea{height:64px;resize:vertical}
     <span class="tag">salary &amp; attendance</span>
   </div>
   <div class="controls">
-    <div class="segmented" id="periodSeg">
-      <button data-period="month">Month</button>
-      <button data-period="1-15">1–15</button>
-      <button data-period="16-end">16–End</button>
-    </div>
-    <button class="iconbtn" id="prevBtn">‹</button>
-    <button class="iconbtn" id="nextBtn">›</button>
+    <button class="iconbtn" id="themeToggleBtn" title="Switch theme">🌙</button>
     <button class="iconbtn" id="settingsBtn">⚙ Settings</button>
     <button class="iconbtn" id="syncNowBtn" title="Sync now">⟲ <span id="headerSyncStatus">Local only</span></button>
     <button class="iconbtn" id="exportBtn">⭳ Export</button>
@@ -291,15 +330,31 @@ textarea{height:64px;resize:vertical}
 
     <div class="card">
       <h3>Legend</h3>
-      <div class="legend">
-        <div class="item"><span class="dot ot"></span>OT weekday</div>
-        <div class="item"><span class="dot hol"></span>Holiday work</div>
-        <div class="item"><span class="dot pay"></span>Payday</div>
-        <div class="item"><span class="dot rcv"></span>Received</div>
+      <div class="legend-group">
+        <div class="legend-label">Attendance — left edge of the day cell</div>
+        <div class="legend-row">
+          <span class="swatch swatch-bar" style="--c:var(--green)"></span>
+          <div><strong>Present</strong><div class="legend-cap">Regular paid workday</div></div>
+        </div>
+        <div class="legend-row">
+          <span class="swatch swatch-bar" style="--c:var(--rust)"></span>
+          <div><strong>Absent</strong><div class="legend-cap">No pay for the day</div></div>
+        </div>
       </div>
-      <div class="legend" style="margin-top:8px">
-        <div class="item"><span class="dot" style="background:var(--green)"></span>Present (left border)</div>
-        <div class="item"><span class="dot" style="background:var(--rust)"></span>Absent (left border)</div>
+      <div class="legend-group">
+        <div class="legend-label">Pay events — top-right corner of the day cell</div>
+        <div class="legend-row">
+          <span class="swatch swatch-dot" style="--c:var(--blue)">OT</span>
+          <div><strong>OT weekday</strong><div class="legend-cap">+2 hrs @ 1.25×</div></div>
+        </div>
+        <div class="legend-row">
+          <span class="swatch swatch-dot" style="--c:var(--rust)">H</span>
+          <div><strong>Holiday work</strong><div class="legend-cap">Full day @ 1.5× — replaces Present</div></div>
+        </div>
+        <div class="legend-row">
+          <span class="swatch swatch-dot" style="--c:var(--green)">₱</span>
+          <div><strong>Payment received</strong><div class="legend-cap">Click the badge to view/edit</div></div>
+        </div>
       </div>
     </div>
 
@@ -319,6 +374,15 @@ textarea{height:64px;resize:vertical}
       <div id="calendarView">
         <div class="cal-head">
           <h2 id="monthLabel"></h2>
+          <div class="cal-controls">
+            <div class="segmented" id="periodSeg">
+              <button data-period="month">Month</button>
+              <button data-period="1-15">1–15</button>
+              <button data-period="16-end">16–End</button>
+            </div>
+            <button class="iconbtn" id="prevBtn">‹</button>
+            <button class="iconbtn" id="nextBtn">›</button>
+          </div>
         </div>
         <div class="dow-row" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:4px">
           <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
@@ -330,17 +394,19 @@ textarea{height:64px;resize:vertical}
       <div id="trackerView" style="display:none">
         <div class="tracker-wrap">
           <table class="tracker">
+            <colgroup>
+              <col style="width:13%"><col style="width:8%"><col style="width:8%"><col style="width:8%">
+              <col style="width:17%"><col style="width:15%"><col style="width:11%"><col style="width:11%"><col>
+            </colgroup>
             <thead>
               <tr>
                 <th>Month</th>
-                <th>Working days</th>
-                <th>OT weekdays</th>
-                <th>Holiday OT</th>
-                <th>Expected (OT)</th>
-                <th>Expected (basic)</th>
-                <th>Total expected</th>
-                <th>Actual received</th>
-                <th>Difference</th>
+                <th class="num">Days</th>
+                <th class="num">OT</th>
+                <th class="num">Hol. OT</th>
+                <th class="num">Total expected</th>
+                <th class="num">Actual received</th>
+                <th class="num">Difference</th>
                 <th>Status</th>
                 <th>Remarks</th>
               </tr>
@@ -781,8 +847,9 @@ function renderCalendar(){
   for(let d=1; d<=days; d++){
     const key = keyOf(y,m,d);
     const e = store.entries[key] || {};
+    const dow = new Date(y,m,d).getDay();
     const box = document.createElement("div");
-    box.className = "day" + (e.status ? " st-"+e.status : "") + (key===todayKey ? " today" : "");
+    box.className = "day" + (e.status ? " st-"+e.status : "") + (key===todayKey ? " today" : "") + ((dow===0||dow===6) ? " weekend" : "");
     const payTotal = e.pay ? e.pay.total : 0;
     const payments = paymentsOnDate(key);
     const paymentBadge = payments.length
@@ -988,7 +1055,7 @@ function renderTracker(){
 
   const ymKeys = Object.keys(months).sort().reverse(); // newest first
   if(ymKeys.length === 0){
-    body.innerHTML = `<tr><td colspan="11" style="font-family:'IBM Plex Sans',Arial,sans-serif;color:var(--muted);padding:16px 10px">No entries logged yet. Mark some days on the calendar to populate this view.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" style="font-family:'IBM Plex Sans',Arial,sans-serif;color:var(--muted);padding:16px 10px">No entries logged yet. Mark some days on the calendar to populate this view.</td></tr>`;
     return;
   }
 
@@ -999,7 +1066,7 @@ function renderTracker(){
   ymKeys.forEach(ym=>{
     const [y, m] = ym.split("-").map(Number);
     if(y !== lastYear){
-      html += `<tr class="fy-header"><td colspan="11">${y}</td></tr>`;
+      html += `<tr class="fy-header"><td colspan="9">${y}</td></tr>`;
       lastYear = y;
     }
     const b = months[ym];
@@ -1019,14 +1086,12 @@ function renderTracker(){
 
     html += `<tr>
       <td class="month-name">${monthNames[m-1]}</td>
-      <td>${b.wd}</td>
-      <td>${b.otwd}</td>
-      <td>${b.otsh}</td>
-      <td>${peso(expectedOT)}</td>
-      <td>${peso(expectedBasic)}</td>
-      <td><strong>${peso(totalExpected)}</strong></td>
-      <td>${b.receivedFlag ? peso(b.received) : "—"}</td>
-      <td class="${diffClass}">${b.receivedFlag ? (diff>=0?"+":"") + peso(diff) : "—"}</td>
+      <td class="num">${b.wd}</td>
+      <td class="num">${b.otwd}</td>
+      <td class="num">${b.otsh}</td>
+      <td class="total-cell"><strong>${peso(totalExpected)}</strong><span class="sub">basic ${peso(expectedBasic)} · OT ${peso(expectedOT)}</span></td>
+      <td class="num">${b.receivedFlag ? peso(b.received) : "—"}</td>
+      <td class="num ${diffClass}">${b.receivedFlag ? (diff>=0?"+":"") + peso(diff) : "—"}</td>
       <td><span class="statuspill ${statusClass}">${statusLabel}</span></td>
       <td class="remarks">${remarksText || ""}</td>
     </tr>`;
@@ -1106,9 +1171,9 @@ function openModal(key){
   document.getElementById("dateTitle").innerText = new Date(key+"T00:00:00").toLocaleDateString("default",{weekday:"long", month:"long", day:"numeric"});
   document.getElementById("dateSub").innerText = key;
 
-  setStatusButtons(currentStatus);
   document.getElementById("otWeekday").checked = !!e.otWeekday;
   document.getElementById("otHoliday").checked = !!e.otHoliday;
+  setStatusButtons(currentStatus);
   document.getElementById("remarks").value = e.remarks || "";
   updatePayPreview();
 
@@ -1116,13 +1181,31 @@ function openModal(key){
 }
 
 function setStatusButtons(status){
+  // Present and Saturday/Holiday work both claim "a full day worked" — can't have both.
+  // Choosing Present while Holiday work is checked clears the Holiday checkbox.
+  if(status === "present"){
+    const holCb = document.getElementById("otHoliday");
+    if(holCb.checked){ holCb.checked = false; }
+  }
   currentStatus = status;
   document.querySelectorAll("#statusRow .optbtn").forEach(b=>{
     b.classList.toggle("active", b.dataset.status === status);
   });
-  // holiday work implies the day is "worked", not present/absent in the regular sense —
-  // but we still let the user explicitly pick status; we just warn via preview.
+  syncHolidayConflict();
   updatePayPreview();
+}
+
+function syncHolidayConflict(){
+  // Disable the Present option while Holiday work is checked — they describe
+  // the same day two incompatible ways (regular workday vs. holiday workday).
+  const holChecked = document.getElementById("otHoliday").checked;
+  const presentBtn = document.querySelector('#statusRow [data-status="present"]');
+  presentBtn.disabled = holChecked;
+  presentBtn.title = holChecked ? "Uncheck Saturday/holiday work first — a day can't be both" : "";
+  if(holChecked && currentStatus === "present"){
+    currentStatus = "";
+    document.querySelectorAll("#statusRow .optbtn").forEach(b=> b.classList.toggle("active", b.dataset.status === ""));
+  }
 }
 
 
@@ -1273,6 +1356,7 @@ document.getElementById("statusRow").addEventListener("click", e=>{
 ["otWeekday","otHoliday"].forEach(id=>{
   document.getElementById(id).addEventListener("change", updatePayPreview);
 });
+document.getElementById("otHoliday").addEventListener("change", syncHolidayConflict);
 
 document.getElementById("saveBtn").onclick = saveEntry;
 document.getElementById("closeModalBtn").onclick = closeModal;
@@ -1324,6 +1408,25 @@ document.getElementById("importFile").addEventListener("change", e=>{
 document.querySelectorAll(".modal").forEach(m=>{
   m.addEventListener("click", e=>{ if(e.target === m) m.classList.remove("open"); });
 });
+
+/* ============================================================
+   THEME TOGGLE (dark / light)
+   ============================================================ */
+const THEME_KEY = "ledgerTheme";
+function applyTheme(theme){
+  document.documentElement.setAttribute("data-theme", theme);
+  document.getElementById("themeToggleBtn").textContent = theme === "light" ? "☀" : "🌙";
+  localStorage.setItem(THEME_KEY, theme);
+}
+function initTheme(){
+  const saved = localStorage.getItem(THEME_KEY);
+  applyTheme(saved === "light" ? "light" : "dark");
+}
+document.getElementById("themeToggleBtn").onclick = () => {
+  const current = document.documentElement.getAttribute("data-theme");
+  applyTheme(current === "light" ? "dark" : "light");
+};
+initTheme();
 
 render();
 </script>

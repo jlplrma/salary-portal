@@ -145,14 +145,96 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .cal-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* ---------- split view: calendar+payments left, detail panel right ---------- */
-.split{display:grid;grid-template-columns:1.5fr 1fr;gap:0;margin:-18px}
+.split{display:grid;grid-template-columns:1.5fr 380px;gap:0;margin:-18px}
 .split-left{padding:18px}
 .split-right{
-  padding:18px;border-left:1px solid var(--hair);background:var(--paper2);
-  border-radius:0 var(--radius) var(--radius) 0;min-width:0;
+  padding:24px 20px;
+  border-left:1px solid var(--hair);
+  background:var(--paper);
+  border-radius:0 var(--radius) var(--radius) 0;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:0;
 }
-.panel-eyebrow{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin:0 0 4px}
-.panel-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:8px}
+
+/* panel header */
+.panel-eyebrow{
+  font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;
+  margin:0 0 5px;letter-spacing:.08em;text-transform:uppercase;
+}
+.panel-date-heading{
+  font-size:18px;font-weight:700;margin:0 0 22px;line-height:1.2;color:var(--text);
+}
+
+/* section divider inside panel */
+.panel-section{
+  padding:16px 0;
+  border-top:1px solid var(--hair);
+}
+.panel-section:first-of-type{border-top:none;padding-top:0}
+.panel-section-label{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--muted);font-weight:600;margin-bottom:10px;
+}
+
+/* attendance toggle pills */
+.status-toggle{display:flex;gap:0;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--paper2)}
+.status-toggle .optbtn{
+  flex:1;border:none;border-radius:0;padding:9px 0;font-size:13px;
+  font-weight:600;background:transparent;
+  border-right:1px solid var(--hair);
+}
+.status-toggle .optbtn:last-child{border-right:none}
+.status-toggle .optbtn.sel-present.active{background:var(--green-soft);color:var(--green)}
+.status-toggle .optbtn.sel-absent.active{background:var(--rust-soft);color:var(--rust)}
+
+/* compensation checkboxes */
+.comp-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;border-radius:8px;border:1px solid var(--hair);
+  cursor:pointer;transition:border-color .12s, background .12s, opacity .15s ease, filter .15s ease;
+  background:var(--paper2);margin-bottom:8px;
+}
+.comp-row:last-child{margin-bottom:0}
+.comp-row:hover{border-color:var(--muted)}
+.comp-row.checked{border-color:var(--gold);background:var(--gold-soft)}
+.comp-row.disabled{opacity:.4;pointer-events:none;cursor:not-allowed;filter:grayscale(.4)}
+.comp-row input[type=checkbox]{display:none}
+.comp-row-label{font-size:13px;font-weight:500;color:var(--text)}
+.comp-row-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.comp-check{
+  width:18px;height:18px;border-radius:5px;border:1.5px solid var(--hair);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:11px;transition:all .12s;
+}
+.comp-row.checked .comp-check{background:var(--gold);border-color:var(--gold);color:#1a1404}
+
+/* pay preview box */
+.pay-preview{
+  background:var(--paper2);border:1px solid var(--hair);border-radius:8px;
+  padding:12px 14px;font-family:'IBM Plex Mono',monospace;
+  font-size:12px;color:var(--muted);line-height:1.7;margin-top:2px;
+}
+.pay-preview b{color:var(--gold);font-weight:600}
+.pay-preview .total-line{
+  margin-top:6px;padding-top:6px;border-top:1px solid var(--hair);
+  color:var(--text);font-size:13px;font-weight:700;
+}
+
+/* remarks */
+.panel-textarea{
+  width:100%;background:var(--paper2);color:var(--text);border:1px solid var(--hair);
+  border-radius:8px;padding:10px 12px;font-family:'IBM Plex Sans',Arial,sans-serif;
+  font-size:13px;resize:none;height:72px;transition:border-color .12s;
+}
+.panel-textarea:focus{outline:none;border-color:var(--gold)}
+
+/* action row */
+.panel-actions{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:auto;padding-top:18px;gap:8px;
+}
 
 .payments-section{margin-top:18px;padding-top:16px;border-top:1px solid var(--hair)}
 .payments-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -270,18 +352,22 @@ table.tracker td.remarks{font-family:'IBM Plex Sans',Arial,sans-serif;color:var(
 .optbtn:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
 .optbtn.sel-present.active{background:var(--green-soft);border-color:var(--green);color:var(--green)}
 .optbtn.sel-absent.active{background:var(--rust-soft);border-color:var(--rust);color:var(--rust)}
-.optbtn.sel-none.active{background:var(--paper3);border-color:var(--muted);color:var(--text)}
 .optbtn.active{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 .checkrow{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13.5px}
-textarea,input[type=text],input[type=number]{
+textarea,input[type=text],input[type=number],input[type=date]{
   width:100%;background:var(--paper2);color:var(--text);border:1px solid var(--hair);
-  border-radius:7px;padding:8px 10px;font-family:'IBM Plex Sans',Arial,sans-serif;font-size:13.5px;
+  border-radius:8px;padding:9px 11px;font-family:'IBM Plex Sans',Arial,sans-serif;font-size:13.5px;
+  transition:border-color .12s;
+}
+textarea:focus,input[type=text]:focus,input[type=number]:focus,input[type=date]:focus{
+  outline:none;border-color:var(--gold);
 }
 textarea{height:64px;resize:vertical}
 .preview{background:var(--paper2);border:1px solid var(--hair);border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--muted);margin-top:4px}
 .preview b{color:var(--gold)}
 .modal-actions{display:flex;justify-content:space-between;margin-top:18px;gap:8px}
-.btn{border:none;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;font-weight:600}
+.btn{border:none;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;font-weight:600;transition:opacity .12s}
+.btn:hover{opacity:.85}
 .btn-primary{background:var(--gold);color:#1a1404}
 .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--hair)}
 .btn-danger{background:var(--rust-soft);color:var(--rust);border:1px solid var(--rust)}
@@ -372,7 +458,7 @@ textarea{height:64px;resize:vertical}
         </div>
         <div class="legend-row">
           <span class="swatch swatch-dot" style="--c:var(--rust)">H</span>
-          <div><strong>Holiday work</strong><div class="legend-cap">Full day @ 1.5× — replaces Present</div></div>
+          <div><strong>Holiday work</strong><div class="legend-cap">Full day @ 1.5× — requires Present</div></div>
         </div>
         <div class="legend-row">
           <span class="swatch swatch-dot" style="--c:var(--green)">₱</span>
@@ -427,29 +513,47 @@ textarea{height:64px;resize:vertical}
           <!-- Day editor -->
           <div id="dayPanel">
             <p class="panel-eyebrow" id="dateSub">—</p>
-            <h3 id="dateTitle" style="margin:0 0 14px">Select a day</h3>
+            <h2 class="panel-date-heading" id="dateTitle">Select a day</h2>
 
-            <div class="fieldgroup">
-              <div class="lbl">Attendance</div>
-              <div class="optrow" id="statusRow">
+            <div class="panel-section">
+              <div class="panel-section-label">Attendance</div>
+              <div class="status-toggle" id="statusRow">
                 <button class="optbtn sel-present" data-status="present">Present</button>
                 <button class="optbtn sel-absent" data-status="absent">Absent</button>
-                <button class="optbtn sel-none" data-status="">None</button>
               </div>
             </div>
 
-            <div class="fieldgroup">
-              <div class="lbl">Compensation</div>
-              <div class="checkrow"><input type="checkbox" id="otWeekday"><label for="otWeekday">OT weekday (2 hrs @ 1.25×, taxed 8%)</label></div>
-              <div class="checkrow"><input type="checkbox" id="otHoliday"><label for="otHoliday">Saturday / holiday work (full day @ 1.5×, taxed 8%)</label></div>
+            <div class="panel-section">
+              <div class="panel-section-label">Compensation</div>
+              <label class="comp-row" id="compRowWeekday" title="Mark the day Present to log OT Weekday">
+                <input type="checkbox" id="otWeekday">
+                <div>
+                  <div class="comp-row-label">OT Weekday</div>
+                  <div class="comp-row-sub" id="subWeekday">2 hrs @ 1.25×, taxed 8%</div>
+                </div>
+                <div class="comp-check" id="checkWeekday"></div>
+              </label>
+              <label class="comp-row" id="compRowHoliday">
+                <input type="checkbox" id="otHoliday">
+                <div>
+                  <div class="comp-row-label">Saturday / Holiday</div>
+                  <div class="comp-row-sub" id="subHoliday">Full day @ 1.5×, taxed 8%</div>
+                </div>
+                <div class="comp-check" id="checkHoliday"></div>
+              </label>
             </div>
 
-            <div class="fieldgroup">
-              <div class="lbl">Remarks</div>
-              <textarea id="remarks" placeholder="Optional note…"></textarea>
+            <div class="panel-section">
+              <div class="panel-section-label">Pay estimate</div>
+              <div class="pay-preview" id="payPreview">
+                <span style="color:var(--muted)">No pay impact for this day.</span>
+              </div>
             </div>
 
-            <div class="preview" id="payPreview">No pay impact for this day.</div>
+            <div class="panel-section">
+              <div class="panel-section-label">Remarks</div>
+              <textarea class="panel-textarea" id="remarks" placeholder="Optional note…"></textarea>
+            </div>
 
             <div class="panel-actions">
               <button class="btn btn-danger" id="clearDayBtn">Clear day</button>
@@ -460,20 +564,20 @@ textarea{height:64px;resize:vertical}
           <!-- Payment editor -->
           <div id="paymentPanel" style="display:none">
             <p class="panel-eyebrow">Payment</p>
-            <h3 id="paymentPanelTitle" style="margin:0 0 14px">Log a payment</h3>
+            <h2 class="panel-date-heading" id="paymentPanelTitle">Log a payment</h2>
 
-            <div class="fieldgroup">
-              <div class="lbl">Date received</div>
+            <div class="panel-section">
+              <div class="panel-section-label">Date received</div>
               <input type="date" id="payDate">
             </div>
 
-            <div class="fieldgroup">
-              <div class="lbl">Amount (₱)</div>
+            <div class="panel-section">
+              <div class="panel-section-label">Amount (₱)</div>
               <input type="number" id="payAmount" step="0.01" placeholder="0.00">
             </div>
 
-            <div class="fieldgroup">
-              <div class="lbl">Type</div>
+            <div class="panel-section">
+              <div class="panel-section-label">Type</div>
               <div class="optrow" id="payTypeRow">
                 <button class="optbtn" data-type="basic">Basic pay</button>
                 <button class="optbtn" data-type="ot">OT pay</button>
@@ -481,18 +585,18 @@ textarea{height:64px;resize:vertical}
               </div>
             </div>
 
-            <div class="fieldgroup">
-              <div class="lbl">Covers period</div>
+            <div class="panel-section">
+              <div class="panel-section-label">Covers period</div>
               <div style="display:flex;gap:8px;align-items:center">
                 <input type="date" id="payPeriodStart">
-                <span style="color:var(--muted)">to</span>
+                <span style="color:var(--muted);font-size:13px">to</span>
                 <input type="date" id="payPeriodEnd">
               </div>
             </div>
 
-            <div class="fieldgroup">
-              <div class="lbl">Remarks</div>
-              <textarea id="payRemarks" placeholder="e.g. 2nd cutoff of May, delayed by 3 weeks"></textarea>
+            <div class="panel-section">
+              <div class="panel-section-label">Remarks</div>
+              <textarea class="panel-textarea" id="payRemarks" placeholder="e.g. 2nd cutoff of May, delayed by 3 weeks"></textarea>
             </div>
 
             <div class="panel-actions">
@@ -803,27 +907,26 @@ function showToast(msg){
 function computePay(entry, settings){
   const r = settings;
   let basic = 0, otwd = 0, otsh = 0;
-  const isPresent = entry.status === "present";
-  if(isPresent){
+  if(entry.status === "present"){
     basic = r.dailyRate * (1 - r.taxRegular/100);
   }
   if(entry.otWeekday){
     otwd = (r.dailyRate/8) * 2 * r.otMult * (1 - r.otTax/100);
   }
   if(entry.otHoliday){
-    if(isPresent){
-      // Present already covers the base day; only add the 0.5× premium
-      otsh = r.dailyRate * 0.5 * (1 - r.otTax/100);
-    } else {
-      // No Present: full 1.5× day
-      otsh = r.dailyRate * 1.5 * (1 - r.otTax/100);
-    }
+    // Saturday/Holiday now requires Present, so the 1× base for the day
+    // is already covered by `basic` above — only add the 0.5× premium,
+    // taxed at the OT rate, to avoid double-paying the base.
+    const prem  = r.dailyRate * 0.5 * (1 - r.otTax/100);
+    otsh = prem;
+    entry._otshBase = 0;
+    entry._otshPrem = Math.round(prem*100)/100;
   }
   return {
-    basic: Math.round(basic*100)/100,
-    otwd:  Math.round(otwd*100)/100,
-    otsh:  Math.round(otsh*100)/100,
-    total: Math.round((basic+otwd+otsh)*100)/100,
+    basic:  Math.round(basic*100)/100,
+    otwd:   Math.round(otwd*100)/100,
+    otsh:   Math.round(otsh*100)/100,
+    total:  Math.round((basic+otwd+otsh)*100)/100,
     ratesUsed: {...r}
   };
 }
@@ -1250,6 +1353,7 @@ function selectDay(key){
 
   document.getElementById("otWeekday").checked = !!e.otWeekday;
   document.getElementById("otHoliday").checked = !!e.otHoliday;
+  syncCompRows();
   setStatusButtons(currentStatus);
   document.getElementById("remarks").value = e.remarks || "";
   updatePayPreview();
@@ -1268,31 +1372,32 @@ function highlightSelectedDay(key){
 }
 
 function setStatusButtons(status){
-  // Present and Saturday/Holiday work both claim "a full day worked" — can't have both.
-  // Choosing Present while Holiday work is checked clears the Holiday checkbox.
-  if(status === "present"){
-    const holCb = document.getElementById("otHoliday");
-    if(holCb.checked){ holCb.checked = false; }
-  }
   currentStatus = status;
   document.querySelectorAll("#statusRow .optbtn").forEach(b=>{
     b.classList.toggle("active", b.dataset.status === status);
   });
-  syncHolidayConflict();
+  updateCompAvailability();
   updatePayPreview();
 }
 
-function syncHolidayConflict(){
-  // Disable the Present option while Holiday work is checked — they describe
-  // the same day two incompatible ways (regular workday vs. holiday workday).
-  const holChecked = document.getElementById("otHoliday").checked;
-  const presentBtn = document.querySelector('#statusRow [data-status="present"]');
-  presentBtn.disabled = holChecked;
-  presentBtn.title = holChecked ? "Uncheck Saturday/holiday work first — a day can't be both" : "";
-  if(holChecked && currentStatus === "present"){
-    currentStatus = "";
-    document.querySelectorAll("#statusRow .optbtn").forEach(b=> b.classList.toggle("active", b.dataset.status === ""));
-  }
+function updateCompAvailability(){
+  // Both OT Weekday and Saturday/Holiday now require the day to be
+  // marked Present before they can be logged.
+  const isPresent = currentStatus === "present";
+
+  const rowWd = document.getElementById("compRowWeekday");
+  const cbWd  = document.getElementById("otWeekday");
+  const subWd = document.getElementById("subWeekday");
+  rowWd.classList.toggle("disabled", !isPresent);
+  cbWd.disabled = !isPresent;
+  subWd.textContent = isPresent ? "2 hrs @ 1.25×, taxed 8%" : "Mark the day Present to enable";
+
+  const rowHol = document.getElementById("compRowHoliday");
+  const cbHol  = document.getElementById("otHoliday");
+  const subHol = document.getElementById("subHoliday");
+  rowHol.classList.toggle("disabled", !isPresent);
+  cbHol.disabled = !isPresent;
+  subHol.textContent = isPresent ? "Full day @ 1.5×, taxed 8%" : "Mark the day Present to enable";
 }
 
 
@@ -1316,7 +1421,7 @@ function updatePayPreview(){
   let parts = [];
   if(pay.basic) parts.push(`basic <b>${peso(pay.basic)}</b>`);
   if(pay.otwd)  parts.push(`OT <b>${peso(pay.otwd)}</b>`);
-  if(pay.otsh)  parts.push(`OT <b>${peso(pay.otsh)}</b>`);
+  if(pay.otsh) parts.push(`Sat/Hol OT <b>${peso(pay.otsh)}</b>`);
   preview.innerHTML = parts.join(" + ") + ` = <b>${peso(pay.total)}</b>`;
 }
 
@@ -1416,7 +1521,7 @@ document.querySelectorAll(".viewtabs button").forEach(btn=>{
     document.querySelectorAll(".viewtabs button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     const view = btn.dataset.view;
-    document.getElementById("calendarView").style.display = view === "calendar" ? "block" : "none";
+    document.getElementById("calendarView").style.display = view === "calendar" ? "grid" : "none";
     document.getElementById("trackerView").style.display = view === "tracker" ? "block" : "none";
   });
 });
@@ -1438,9 +1543,26 @@ document.getElementById("statusRow").addEventListener("click", e=>{
 });
 
 ["otWeekday","otHoliday"].forEach(id=>{
-  document.getElementById(id).addEventListener("change", updatePayPreview);
+  document.getElementById(id).addEventListener("change", ()=>{
+    syncCompRows();
+    updatePayPreview();
+  });
 });
-document.getElementById("otHoliday").addEventListener("change", syncHolidayConflict);
+
+function syncCompRows(){
+  ["Weekday","Holiday"].forEach(key=>{
+    const cb  = document.getElementById("ot"+key);
+    const row = document.getElementById("compRow"+key);
+    const chk = document.getElementById("check"+key);
+    if(cb.checked){
+      row.classList.add("checked");
+      chk.textContent = "✓";
+    } else {
+      row.classList.remove("checked");
+      chk.textContent = "";
+    }
+  });
+}
 
 document.getElementById("saveBtn").onclick = saveEntry;
 document.getElementById("clearDayBtn").onclick = clearDay;

@@ -148,18 +148,17 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .split{display:grid;grid-template-columns:1.5fr 1fr;gap:0;margin:-18px}
 .split-left{padding:18px}
 .split-right{
-  padding:20px;border-left:1px solid var(--hair);background:var(--paper2);
+  padding:18px;border-left:1px solid var(--hair);background:var(--paper2);
   border-radius:0 var(--radius) var(--radius) 0;min-width:0;
-  overflow-y:auto;max-height:calc(100vh - 140px);
 }
-.panel-eyebrow{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin:0 0 8px;letter-spacing:.05em;text-transform:uppercase}
-.panel-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:8px;padding-top:16px;border-top:1px solid var(--hair)}
+.panel-eyebrow{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin:0 0 4px}
+.panel-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:8px}
 
 .payments-section{margin-top:18px;padding-top:16px;border-top:1px solid var(--hair)}
 .payments-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .payment-row{
-  display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:7px;cursor:pointer;
-  font-size:12.5px;border:1px solid transparent;transition:all .15s;
+  display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:7px;cursor:pointer;
+  font-size:12.5px;border:1px solid transparent;
 }
 .payment-row:hover{background:var(--paper3);border-color:var(--hair)}
 .payment-row .pr-date{font-family:'IBM Plex Mono',monospace;color:var(--muted);width:78px;flex-shrink:0}
@@ -261,40 +260,31 @@ table.tracker td.remarks{font-family:'IBM Plex Sans',Arial,sans-serif;color:var(
 .modalbox{background:var(--paper);border:1px solid var(--hair);width:min(480px,92vw);max-height:88vh;overflow:auto;padding:22px;border-radius:14px}
 .modalbox h3{margin:0 0 4px;font-size:16px}
 .modalbox .sub-date{color:var(--muted);font-size:12px;font-family:'IBM Plex Mono',monospace;margin-bottom:16px}
-.fieldgroup{margin-bottom:18px}
+.fieldgroup{margin-bottom:16px}
 .fieldgroup .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;font-weight:600}
 .optrow{display:flex;flex-wrap:wrap;gap:8px}
 .optbtn{
   background:var(--paper2);border:1px solid var(--hair);color:var(--text);
-  padding:9px 13px;border-radius:7px;font-size:13px;cursor:pointer;transition:all .15s;font-weight:500;
+  padding:8px 12px;border-radius:7px;font-size:13px;cursor:pointer;
 }
-.optbtn:hover{border-color:var(--muted)}
 .optbtn:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
 .optbtn.sel-present.active{background:var(--green-soft);border-color:var(--green);color:var(--green)}
 .optbtn.sel-absent.active{background:var(--rust-soft);border-color:var(--rust);color:var(--rust)}
-
+.optbtn.sel-none.active{background:var(--paper3);border-color:var(--muted);color:var(--text)}
 .optbtn.active{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
-.checkrow{display:flex;align-items:center;gap:8px;padding:10px 0;font-size:13.5px}
-textarea,input[type=text],input[type=number],input[type=date]{
-  width:100%;background:var(--paper3);color:var(--text);border:1px solid var(--hair);
-  border-radius:7px;padding:10px 11px;font-family:'IBM Plex Sans',Arial,sans-serif;font-size:13.5px;
-  transition:all .15s;
+.checkrow{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13.5px}
+textarea,input[type=text],input[type=number]{
+  width:100%;background:var(--paper2);color:var(--text);border:1px solid var(--hair);
+  border-radius:7px;padding:8px 10px;font-family:'IBM Plex Sans',Arial,sans-serif;font-size:13.5px;
 }
-textarea:focus,input[type=text]:focus,input[type=number]:focus,input[type=date]:focus{
-  border-color:var(--gold);background:var(--paper2);outline:none;
-}
-textarea{height:80px;resize:vertical}
-.preview{background:var(--paper3);border:1px solid var(--hair);border-radius:8px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
-.preview b{color:var(--gold);font-weight:700}
+textarea{height:64px;resize:vertical}
+.preview{background:var(--paper2);border:1px solid var(--hair);border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--muted);margin-top:4px}
+.preview b{color:var(--gold)}
 .modal-actions{display:flex;justify-content:space-between;margin-top:18px;gap:8px}
-.btn{border:none;border-radius:8px;padding:10px 18px;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s}
-.btn:hover{transform:translateY(-1px)}
+.btn{border:none;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;font-weight:600}
 .btn-primary{background:var(--gold);color:#1a1404}
-.btn-primary:hover{box-shadow:0 4px 12px rgba(216, 169, 63, 0.25)}
 .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--hair)}
-.btn-ghost:hover{border-color:var(--text);color:var(--text)}
 .btn-danger{background:var(--rust-soft);color:var(--rust);border:1px solid var(--rust)}
-.btn-danger:hover{background:var(--rust);color:var(--paper2)}
 
 /* settings modal */
 .settingsgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -437,13 +427,14 @@ textarea{height:80px;resize:vertical}
           <!-- Day editor -->
           <div id="dayPanel">
             <p class="panel-eyebrow" id="dateSub">—</p>
-            <h3 id="dateTitle" style="margin:0 0 16px;font-size:17px;font-weight:600">Select a day</h3>
+            <h3 id="dateTitle" style="margin:0 0 14px">Select a day</h3>
 
             <div class="fieldgroup">
               <div class="lbl">Attendance</div>
               <div class="optrow" id="statusRow">
                 <button class="optbtn sel-present" data-status="present">Present</button>
                 <button class="optbtn sel-absent" data-status="absent">Absent</button>
+                <button class="optbtn sel-none" data-status="">None</button>
               </div>
             </div>
 
@@ -469,7 +460,7 @@ textarea{height:80px;resize:vertical}
           <!-- Payment editor -->
           <div id="paymentPanel" style="display:none">
             <p class="panel-eyebrow">Payment</p>
-            <h3 id="paymentPanelTitle" style="margin:0 0 16px;font-size:17px;font-weight:600">Log a payment</h3>
+            <h3 id="paymentPanelTitle" style="margin:0 0 14px">Log a payment</h3>
 
             <div class="fieldgroup">
               <div class="lbl">Date received</div>
@@ -812,19 +803,26 @@ function showToast(msg){
 function computePay(entry, settings){
   const r = settings;
   let basic = 0, otwd = 0, otsh = 0;
-  if(entry.status === "present"){
-    basic = (r.dailyRate * (1 - r.taxRegular/100));
+  const isPresent = entry.status === "present";
+  if(isPresent){
+    basic = r.dailyRate * (1 - r.taxRegular/100);
   }
   if(entry.otWeekday){
     otwd = (r.dailyRate/8) * 2 * r.otMult * (1 - r.otTax/100);
   }
   if(entry.otHoliday){
-    otsh = (r.dailyRate * r.holMult) * (1 - r.otTax/100);
+    if(isPresent){
+      // Present already covers the base day; only add the 0.5× premium
+      otsh = r.dailyRate * 0.5 * (1 - r.otTax/100);
+    } else {
+      // No Present: full 1.5× day
+      otsh = r.dailyRate * 1.5 * (1 - r.otTax/100);
+    }
   }
   return {
     basic: Math.round(basic*100)/100,
-    otwd: Math.round(otwd*100)/100,
-    otsh: Math.round(otsh*100)/100,
+    otwd:  Math.round(otwd*100)/100,
+    otsh:  Math.round(otsh*100)/100,
     total: Math.round((basic+otwd+otsh)*100)/100,
     ratesUsed: {...r}
   };
@@ -1313,24 +1311,13 @@ function updatePayPreview(){
   const preview = document.getElementById("payPreview");
   if(pay.total === 0){
     preview.innerHTML = "No pay impact for this day.";
-  } else {
-    let parts = [];
-    if(pay.basic) parts.push(`basic <b>${peso(pay.basic)}</b>`);
-    if(pay.otwd) parts.push(`OT <b>${peso(pay.otwd)}</b>`);
-    
-    // For Saturday/Holiday, show as basic + OT breakdown
-    if(pay.otsh){
-      const r = store.settings;
-      const basicComponent = r.dailyRate * (1 - r.otTax/100);
-      const otComponent = pay.otsh - basicComponent;
-      parts.push(`basic <b>${peso(basicComponent)}</b> + OT <b>${peso(otComponent)}</b>`);
-    }
-    
-    preview.innerHTML = parts.join(" + ") + ` = <b>${peso(pay.total)}</b> (using current settings)`;
+    return;
   }
-  if(draft.otHoliday && draft.status === "absent"){
-    preview.innerHTML += "<br>⚠ Holiday work logged while status is Absent — check this is intentional.";
-  }
+  let parts = [];
+  if(pay.basic) parts.push(`basic <b>${peso(pay.basic)}</b>`);
+  if(pay.otwd)  parts.push(`OT <b>${peso(pay.otwd)}</b>`);
+  if(pay.otsh)  parts.push(`OT <b>${peso(pay.otsh)}</b>`);
+  preview.innerHTML = parts.join(" + ") + ` = <b>${peso(pay.total)}</b>`;
 }
 
 function saveEntry(){
@@ -1429,7 +1416,7 @@ document.querySelectorAll(".viewtabs button").forEach(btn=>{
     document.querySelectorAll(".viewtabs button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     const view = btn.dataset.view;
-    document.getElementById("calendarView").style.display = view === "calendar" ? "grid" : "none";
+    document.getElementById("calendarView").style.display = view === "calendar" ? "block" : "none";
     document.getElementById("trackerView").style.display = view === "tracker" ? "block" : "none";
   });
 });

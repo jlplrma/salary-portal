@@ -426,6 +426,7 @@ textarea{height:64px;resize:vertical}
       <div class="row"><span>Basic pay</span><span class="amt" id="basic">₱0.00</span></div>
       <div class="row"><span>OT weekday pay</span><span class="amt" id="otwdpay">₱0.00</span></div>
       <div class="row"><span>Holiday work pay</span><span class="amt" id="otshpay">₱0.00</span></div>
+      <div class="row" id="otCapRow" style="display:none"><span>OT cap adjustment</span><span class="amt rust" id="otCapAdj">₱0.00</span></div>
       <div class="row"><span><strong>Total</strong></span><span class="amt" id="totalCard"><strong>₱0.00</strong></span></div>
     </div>
 
@@ -652,7 +653,10 @@ textarea{height:64px;resize:vertical}
       <div><label>OT weekday multiplier</label><input type="number" id="cfgOtMult" step="0.01"></div>
       <div><label>OT / holiday tax (%)</label><input type="number" id="cfgOtTax" step="0.01"></div>
       <div><label>Holiday multiplier</label><input type="number" id="cfgHolMult" step="0.01"></div>
+      <div><label>Monthly OT cap — days</label><input type="number" id="cfgOtCapDays" step="1"></div>
+      <div><label>Monthly OT cap — rate (%)</label><input type="number" id="cfgOtCapRate" step="0.01"></div>
     </div>
+    <div class="sub-date" style="margin-top:8px">Total OT pay (weekday + Sat/Holiday) per calendar month is capped at <b>cap days × daily rate × cap rate × (1 − OT tax)</b>.</div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="closeSettingsBtn">Cancel</button>
       <button class="btn btn-primary" id="saveSettingsBtn">Save settings</button>
@@ -735,7 +739,9 @@ const DEFAULT_SETTINGS = {
   hdmf: 400,
   otMult: 1.25,
   otTax: 8,           // %
-  holMult: 1.5
+  holMult: 1.5,
+  otCapDays: 22,       // monthly OT pay cap = otCapDays * dailyRate * otCapRate% * (1 - otTax%)
+  otCapRate: 16        // %
 };
 
 function loadStore(){
@@ -751,6 +757,7 @@ function loadStore(){
   }
   if(raw._updatedAt == null) raw._updatedAt = 0;
   if(!raw.settings) raw.settings = {...DEFAULT_SETTINGS};
+  else raw.settings = {...DEFAULT_SETTINGS, ...raw.settings};
   if(!raw.entries) raw.entries = {};
   if(!raw.payments) raw.payments = {};
   return raw;
@@ -904,6 +911,12 @@ function showToast(msg){
 }
 
 /* ---------- pay calculation (frozen at save time) ---------- */
+function otCapAmount(settings){
+  const r = settings;
+  // Mirrors: MIN(otwd + otsh, otCapDays * dailyRate * otCapRate% * (1 - otTax%))
+  return r.otCapDays * r.dailyRate * (r.otCapRate/100) * (1 - r.otTax/100);
+}
+
 function computePay(entry, settings){
   const r = settings;
   let basic = 0, otwd = 0, otsh = 0;
@@ -1094,7 +1107,24 @@ function renderStats(){
     }
   });
 
-  const total = basic + otwdPay + otshPay;
+  // Cap is monthly, so compute it against the FULL calendar month's raw OT
+  // (not just the displayed half), then apportion the deduction back onto
+  // the period being shown — otherwise viewing 1-15 and 16-end separately
+  // would each get the full cap and double-allow OT for the month.
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  let rawOTFullMonth = 0;
+  for(let d=1; d<=daysInMonth; d++){
+    const e = store.entries[keyOf(y,m,d)];
+    if(e && e.pay) rawOTFullMonth += e.pay.otwd + e.pay.otsh;
+  }
+  const cap = otCapAmount(store.settings);
+  const cappedOTFullMonth = Math.min(rawOTFullMonth, cap);
+  const scale = rawOTFullMonth > 0 ? cappedOTFullMonth / rawOTFullMonth : 1;
+
+  const rawOT = otwdPay + otshPay;
+  const cappedOT = rawOT * scale;
+  const otCapped = cappedOT < rawOT - 0.005;
+  const total = basic + cappedOT;
 
   document.getElementById("wd").innerText = wd;
   document.getElementById("abs").innerText = abs;
@@ -1104,6 +1134,13 @@ function renderStats(){
   document.getElementById("basic").innerText = peso(basic);
   document.getElementById("otwdpay").innerText = peso(otwdPay);
   document.getElementById("otshpay").innerText = peso(otshPay);
+  const capRow = document.getElementById("otCapRow");
+  if(otCapped){
+    capRow.style.display = "";
+    document.getElementById("otCapAdj").innerText = "−" + peso(rawOT - cappedOT);
+  } else {
+    capRow.style.display = "none";
+  }
   document.getElementById("totalCard").innerHTML = "<strong>"+peso(total)+"</strong>";
 
   document.getElementById("totalExpected").innerText = peso(total);
@@ -1212,7 +1249,11 @@ function renderTracker(){
       lastYear = y;
     }
     const b = months[ym];
-    const expectedOT = b.otwdPay + b.otshPay;
+    const rawOT = b.otwdPay + b.otshPay;
+    const cap = otCapAmount(store.settings);
+    const cappedOT = Math.min(rawOT, cap);
+    const otCapped = cappedOT < rawOT - 0.005;
+    const expectedOT = cappedOT;
     const expectedBasic = b.basicPay;
     const totalExpected = expectedOT + expectedBasic;
     const diff = b.received - totalExpected;
@@ -1231,7 +1272,7 @@ function renderTracker(){
       <td class="num">${b.wd}</td>
       <td class="num">${b.otwd}</td>
       <td class="num">${b.otsh}</td>
-      <td class="total-cell"><strong>${peso(totalExpected)}</strong><span class="sub">basic ${peso(expectedBasic)} · OT ${peso(expectedOT)}</span></td>
+      <td class="total-cell"><strong>${peso(totalExpected)}</strong><span class="sub">basic ${peso(expectedBasic)} · OT ${peso(expectedOT)}${otCapped ? ' · capped' : ''}</span></td>
       <td class="num">${b.receivedFlag ? peso(b.received) : "—"}</td>
       <td class="num ${diffClass}">${b.receivedFlag ? (diff>=0?"+":"") + peso(diff) : "—"}</td>
       <td><span class="statuspill ${statusClass}">${statusLabel}</span></td>
@@ -1381,23 +1422,29 @@ function setStatusButtons(status){
 }
 
 function updateCompAvailability(){
-  // Both OT Weekday and Saturday/Holiday now require the day to be
-  // marked Present before they can be logged.
+  // Both OT Weekday and Saturday/Holiday require the day to be marked
+  // Present, and they're mutually exclusive — only one can apply per day.
   const isPresent = currentStatus === "present";
 
   const rowWd = document.getElementById("compRowWeekday");
   const cbWd  = document.getElementById("otWeekday");
   const subWd = document.getElementById("subWeekday");
-  rowWd.classList.toggle("disabled", !isPresent);
-  cbWd.disabled = !isPresent;
-  subWd.textContent = isPresent ? "2 hrs @ 1.25×, taxed 8%" : "Mark the day Present to enable";
+  const wdBlocked = !isPresent || cbWd.checked === false && document.getElementById("otHoliday").checked;
+  rowWd.classList.toggle("disabled", wdBlocked);
+  cbWd.disabled = wdBlocked;
+  subWd.textContent = !isPresent
+    ? "Mark the day Present to enable"
+    : (wdBlocked ? "Already logged as Sat/Holiday" : "2 hrs @ 1.25×, taxed 8%");
 
   const rowHol = document.getElementById("compRowHoliday");
   const cbHol  = document.getElementById("otHoliday");
   const subHol = document.getElementById("subHoliday");
-  rowHol.classList.toggle("disabled", !isPresent);
-  cbHol.disabled = !isPresent;
-  subHol.textContent = isPresent ? "Full day @ 1.5×, taxed 8%" : "Mark the day Present to enable";
+  const holBlocked = !isPresent || cbHol.checked === false && document.getElementById("otWeekday").checked;
+  rowHol.classList.toggle("disabled", holBlocked);
+  cbHol.disabled = holBlocked;
+  subHol.textContent = !isPresent
+    ? "Mark the day Present to enable"
+    : (holBlocked ? "Already logged as OT Weekday" : "Full day @ 1.5×, taxed 8%");
 }
 
 
@@ -1461,6 +1508,8 @@ function openSettings(){
   document.getElementById("cfgOtMult").value = s.otMult;
   document.getElementById("cfgOtTax").value = s.otTax;
   document.getElementById("cfgHolMult").value = s.holMult;
+  document.getElementById("cfgOtCapDays").value = s.otCapDays;
+  document.getElementById("cfgOtCapRate").value = s.otCapRate;
   document.getElementById("cfgToken").value = syncConfig.dbUrl || "";
   document.getElementById("cfgGistId").value = syncConfig.syncId || "";
   document.getElementById("settingsModal").classList.add("open");
@@ -1474,6 +1523,8 @@ function saveSettings(){
     otMult: Number(document.getElementById("cfgOtMult").value)||0,
     otTax: Number(document.getElementById("cfgOtTax").value)||0,
     holMult: Number(document.getElementById("cfgHolMult").value)||0,
+    otCapDays: Number(document.getElementById("cfgOtCapDays").value)||0,
+    otCapRate: Number(document.getElementById("cfgOtCapRate").value)||0,
   };
   saveStore();
   closeSettings();
@@ -1543,8 +1594,15 @@ document.getElementById("statusRow").addEventListener("click", e=>{
 });
 
 ["otWeekday","otHoliday"].forEach(id=>{
-  document.getElementById(id).addEventListener("change", ()=>{
+  document.getElementById(id).addEventListener("change", (e)=>{
+    if(e.target.checked){
+      // OT Weekday and Saturday/Holiday are mutually exclusive — a day
+      // is either a regular workday with 2 hrs OT, or a full Sat/Holiday.
+      const otherId = id === "otWeekday" ? "otHoliday" : "otWeekday";
+      document.getElementById(otherId).checked = false;
+    }
     syncCompRows();
+    updateCompAvailability();
     updatePayPreview();
   });
 });

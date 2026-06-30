@@ -143,6 +143,33 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
 .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
 .cal-head h2{margin:0;font-size:16px;font-weight:600}
 .cal-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ---------- split view: calendar+payments left, detail panel right ---------- */
+.split{display:grid;grid-template-columns:1.5fr 1fr;gap:0;margin:-18px}
+.split-left{padding:18px}
+.split-right{
+  padding:18px;border-left:1px solid var(--hair);background:var(--paper2);
+  border-radius:0 var(--radius) var(--radius) 0;min-width:0;
+}
+.panel-eyebrow{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin:0 0 4px}
+.panel-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:8px}
+
+.payments-section{margin-top:18px;padding-top:16px;border-top:1px solid var(--hair)}
+.payments-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.payment-row{
+  display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:7px;cursor:pointer;
+  font-size:12.5px;border:1px solid transparent;
+}
+.payment-row:hover{background:var(--paper3);border-color:var(--hair)}
+.payment-row .pr-date{font-family:'IBM Plex Mono',monospace;color:var(--muted);width:78px;flex-shrink:0}
+.payment-row .pr-period{flex:1;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.payment-row .pr-amt{font-family:'IBM Plex Mono',monospace;color:var(--green);font-weight:600}
+.payments-empty{color:var(--muted);font-size:12.5px;padding:8px 0}
+
+@media(max-width:880px){
+  .split{grid-template-columns:1fr;margin:-18px}
+  .split-right{border-left:none;border-top:1px solid var(--hair);border-radius:0}
+}
 .nav{display:flex;gap:6px}
 .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .dow{text-align:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-bottom:6px}
@@ -160,6 +187,8 @@ header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap
   box-shadow:0 0 0 1.5px var(--gold), inset 0 0 0 1px var(--gold);
 }
 .day.today .daynum{color:var(--gold);font-weight:700}
+.day.selected{box-shadow:0 0 0 1.5px var(--blue), inset 0 0 0 1px var(--blue)}
+.agenda-day.selected{background:var(--blue-soft)}
 .day.st-present{border-left-color:var(--green)}
 .day.st-absent{border-left-color:var(--rust)}
 .daynum{font-size:12.5px;color:var(--text);font-family:'IBM Plex Mono',monospace}
@@ -307,12 +336,6 @@ textarea{height:64px;resize:vertical}
 <div class="grid">
   <div>
     <div class="card">
-      <h3>Payments</h3>
-      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Record actual money received, separate from when it was earned.</p>
-      <button class="btn btn-primary" id="logPaymentBtn" style="width:100%">₱ Log payment</button>
-    </div>
-
-    <div class="card">
       <h3>Breakdown</h3>
       <div class="row"><span>Basic pay</span><span class="amt" id="basic">₱0.00</span></div>
       <div class="row"><span>OT weekday pay</span><span class="amt" id="otwdpay">₱0.00</span></div>
@@ -371,24 +394,116 @@ textarea{height:64px;resize:vertical}
         <button data-view="tracker">Monthly Tracker</button>
       </div>
 
-      <div id="calendarView">
-        <div class="cal-head">
-          <h2 id="monthLabel"></h2>
-          <div class="cal-controls">
-            <div class="segmented" id="periodSeg">
-              <button data-period="month">Month</button>
-              <button data-period="1-15">1–15</button>
-              <button data-period="16-end">16–End</button>
+      <div id="calendarView" class="split">
+        <div class="split-left">
+          <div class="cal-head">
+            <h2 id="monthLabel"></h2>
+            <div class="cal-controls">
+              <div class="segmented" id="periodSeg">
+                <button data-period="month">Month</button>
+                <button data-period="1-15">1–15</button>
+                <button data-period="16-end">16–End</button>
+              </div>
+              <button class="iconbtn" id="prevBtn">‹</button>
+              <button class="iconbtn" id="nextBtn">›</button>
             </div>
-            <button class="iconbtn" id="prevBtn">‹</button>
-            <button class="iconbtn" id="nextBtn">›</button>
+          </div>
+          <div class="dow-row" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:4px">
+            <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+          </div>
+          <div id="calendar" class="calendar"></div>
+          <div id="agenda" class="agenda"></div>
+
+          <div class="payments-section">
+            <div class="payments-section-head">
+              <span class="lbl" style="margin:0">Payments this month</span>
+              <button class="btn btn-ghost" id="logPaymentBtn" style="padding:5px 12px;font-size:12px">+ Log payment</button>
+            </div>
+            <div id="paymentsList"></div>
           </div>
         </div>
-        <div class="dow-row" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:4px">
-          <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+
+        <div class="split-right" id="detailPanel">
+          <!-- Day editor -->
+          <div id="dayPanel">
+            <p class="panel-eyebrow" id="dateSub">—</p>
+            <h3 id="dateTitle" style="margin:0 0 14px">Select a day</h3>
+
+            <div class="fieldgroup">
+              <div class="lbl">Attendance</div>
+              <div class="optrow" id="statusRow">
+                <button class="optbtn sel-present" data-status="present">Present</button>
+                <button class="optbtn sel-absent" data-status="absent">Absent</button>
+                <button class="optbtn sel-none" data-status="">None</button>
+              </div>
+            </div>
+
+            <div class="fieldgroup">
+              <div class="lbl">Compensation</div>
+              <div class="checkrow"><input type="checkbox" id="otWeekday"><label for="otWeekday">OT weekday (2 hrs @ 1.25×, taxed 8%)</label></div>
+              <div class="checkrow"><input type="checkbox" id="otHoliday"><label for="otHoliday">Saturday / holiday work (full day @ 1.5×, taxed 8%)</label></div>
+            </div>
+
+            <div class="fieldgroup">
+              <div class="lbl">Remarks</div>
+              <textarea id="remarks" placeholder="Optional note…"></textarea>
+            </div>
+
+            <div class="preview" id="payPreview">No pay impact for this day.</div>
+
+            <div class="panel-actions">
+              <button class="btn btn-danger" id="clearDayBtn">Clear day</button>
+              <button class="btn btn-primary" id="saveBtn">Save</button>
+            </div>
+          </div>
+
+          <!-- Payment editor -->
+          <div id="paymentPanel" style="display:none">
+            <p class="panel-eyebrow">Payment</p>
+            <h3 id="paymentPanelTitle" style="margin:0 0 14px">Log a payment</h3>
+
+            <div class="fieldgroup">
+              <div class="lbl">Date received</div>
+              <input type="date" id="payDate">
+            </div>
+
+            <div class="fieldgroup">
+              <div class="lbl">Amount (₱)</div>
+              <input type="number" id="payAmount" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="fieldgroup">
+              <div class="lbl">Type</div>
+              <div class="optrow" id="payTypeRow">
+                <button class="optbtn" data-type="basic">Basic pay</button>
+                <button class="optbtn" data-type="ot">OT pay</button>
+                <button class="optbtn" data-type="mixed">Basic + OT</button>
+              </div>
+            </div>
+
+            <div class="fieldgroup">
+              <div class="lbl">Covers period</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="date" id="payPeriodStart">
+                <span style="color:var(--muted)">to</span>
+                <input type="date" id="payPeriodEnd">
+              </div>
+            </div>
+
+            <div class="fieldgroup">
+              <div class="lbl">Remarks</div>
+              <textarea id="payRemarks" placeholder="e.g. 2nd cutoff of May, delayed by 3 weeks"></textarea>
+            </div>
+
+            <div class="panel-actions">
+              <button class="btn btn-danger" id="deletePaymentBtn" style="display:none">Delete</button>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-ghost" id="cancelPaymentBtn">Cancel</button>
+                <button class="btn btn-primary" id="savePaymentBtn">Save payment</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="calendar" class="calendar"></div>
-        <div id="agenda" class="agenda"></div>
       </div>
 
       <div id="trackerView" style="display:none">
@@ -419,93 +534,6 @@ textarea{height:64px;resize:vertical}
   </div>
 </div>
 
-</div>
-
-<!-- Day entry modal -->
-<div class="modal" id="modal">
-  <div class="modalbox">
-    <h3 id="dateTitle">Day</h3>
-    <div class="sub-date" id="dateSub"></div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Attendance</div>
-      <div class="optrow" id="statusRow">
-        <button class="optbtn sel-present" data-status="present">Present</button>
-        <button class="optbtn sel-absent" data-status="absent">Absent</button>
-        <button class="optbtn sel-none" data-status="">None</button>
-      </div>
-    </div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Compensation</div>
-      <div class="checkrow"><input type="checkbox" id="otWeekday"><label for="otWeekday">OT weekday (2 hrs @ 1.25×, taxed 8%)</label></div>
-      <div class="checkrow"><input type="checkbox" id="otHoliday"><label for="otHoliday">Saturday / holiday work (full day @ 1.5×, taxed 8%)</label></div>
-    </div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Remarks</div>
-      <textarea id="remarks" placeholder="Optional note…"></textarea>
-    </div>
-
-    <div class="preview" id="payPreview">No pay impact for this day.</div>
-
-    <div class="modal-actions">
-      <button class="btn btn-danger" id="clearDayBtn">Clear day</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" id="closeModalBtn">Cancel</button>
-        <button class="btn btn-primary" id="saveBtn">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Payment entry modal -->
-<div class="modal" id="paymentModal">
-  <div class="modalbox">
-    <h3 id="paymentModalTitle">Log a payment</h3>
-    <div class="sub-date">Record what actually landed in your bank, and which work period it pays for.</div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Date received</div>
-      <input type="date" id="payDate">
-    </div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Amount (₱)</div>
-      <input type="number" id="payAmount" step="0.01" placeholder="0.00">
-    </div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Type</div>
-      <div class="optrow" id="payTypeRow">
-        <button class="optbtn" data-type="basic">Basic pay</button>
-        <button class="optbtn" data-type="ot">OT pay</button>
-        <button class="optbtn" data-type="mixed">Basic + OT</button>
-      </div>
-    </div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Covers period</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input type="date" id="payPeriodStart">
-        <span style="color:var(--muted)">to</span>
-        <input type="date" id="payPeriodEnd">
-      </div>
-    </div>
-
-    <div class="fieldgroup">
-      <div class="lbl">Remarks</div>
-      <textarea id="payRemarks" placeholder="e.g. 2nd cutoff of May, delayed by 3 weeks"></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-danger" id="deletePaymentBtn" style="display:none">Delete</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" id="closePaymentModalBtn">Cancel</button>
-        <button class="btn btn-primary" id="savePaymentBtn">Save payment</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Settings modal -->
@@ -810,9 +838,11 @@ function render(){
   renderAgenda();
   renderStats();
   renderTracker();
+  renderPaymentsList();
   document.querySelectorAll("#periodSeg button").forEach(b=>{
     b.classList.toggle("active", b.dataset.period === activePeriod);
   });
+  if(selectedDate) highlightSelectedDay(panelMode === "day" ? selectedDate : null);
 }
 
 function renderCalendarHeader(){
@@ -850,6 +880,7 @@ function renderCalendar(){
     const dow = new Date(y,m,d).getDay();
     const box = document.createElement("div");
     box.className = "day" + (e.status ? " st-"+e.status : "") + (key===todayKey ? " today" : "") + ((dow===0||dow===6) ? " weekend" : "");
+    box.dataset.key = key;
     const payTotal = e.pay ? e.pay.total : 0;
     const payments = paymentsOnDate(key);
     const paymentBadge = payments.length
@@ -861,7 +892,7 @@ function renderCalendar(){
          <div class="dotrow">${badgeDotsFor(e)}${paymentBadge}</div>
        </div>
        <div class="daypay">${payTotal ? peso(payTotal) : ""}</div>`;
-    box.onclick = () => openModal(key);
+    box.onclick = () => selectDay(key);
     cal.appendChild(box);
   }
 
@@ -869,7 +900,7 @@ function renderCalendar(){
     el.addEventListener("click", (ev)=>{
       ev.stopPropagation();
       const list = paymentsOnDate(el.dataset.pdate);
-      if(list.length) openPaymentModal(list[0][0]);
+      if(list.length) openPaymentEditor(list[0][0]);
     });
   });
 }
@@ -886,6 +917,7 @@ function renderAgenda(){
     const e = store.entries[key] || {};
     const row = document.createElement("div");
     row.className = "agenda-day" + (e.status ? " st-"+e.status : "");
+    row.dataset.key = key;
     const tags = [];
     if(e.status==="absent") tags.push('<span class="chip-abs">Absent</span>');
     if(e.otWeekday) tags.push('<span class="chip-ot">OT</span>');
@@ -901,10 +933,10 @@ function renderAgenda(){
       if(ev.target.closest(".payment-marker")){
         ev.stopPropagation();
         const list = paymentsOnDate(key);
-        if(list.length) openPaymentModal(list[0][0]);
+        if(list.length) openPaymentEditor(list[0][0]);
         return;
       }
-      openModal(key);
+      selectDay(key);
     };
     agenda.appendChild(row);
   }
@@ -1113,10 +1145,10 @@ function setPayType(type){
   });
 }
 
-function openPaymentModal(id){
+function openPaymentEditor(id){
   selectedPaymentId = id || null;
   const p = id ? store.payments[id] : null;
-  document.getElementById("paymentModalTitle").innerText = id ? "Edit payment" : "Log a payment";
+  document.getElementById("paymentPanelTitle").innerText = id ? "Edit payment" : "Log a payment";
   document.getElementById("payDate").value = p ? p.date : todayKey;
   document.getElementById("payAmount").value = p ? p.amount : "";
   document.getElementById("payPeriodStart").value = p ? p.periodStart : "";
@@ -1124,11 +1156,8 @@ function openPaymentModal(id){
   document.getElementById("payRemarks").value = p ? (p.remarks || "") : "";
   setPayType(p ? p.type : "basic");
   document.getElementById("deletePaymentBtn").style.display = id ? "inline-block" : "none";
-  document.getElementById("paymentModal").classList.add("open");
-}
-
-function closePaymentModal(){
-  document.getElementById("paymentModal").classList.remove("open");
+  showPaymentPanel();
+  highlightSelectedDay(null);
 }
 
 function savePayment(){
@@ -1146,8 +1175,8 @@ function savePayment(){
   const id = selectedPaymentId || ("p" + Date.now());
   store.payments[id] = { date, amount, type: currentPayType, periodStart, periodEnd, remarks };
   saveStore();
-  closePaymentModal();
   render();
+  showDayPanel();
   showToast("Payment saved.");
 }
 
@@ -1156,14 +1185,55 @@ function deletePayment(){
     delete store.payments[selectedPaymentId];
     saveStore();
   }
-  closePaymentModal();
   render();
+  showDayPanel();
   showToast("Payment deleted.");
 }
 
-let currentStatus = "";
+function renderPaymentsList(){
+  const wrap = document.getElementById("paymentsList");
+  const {start,end,y,m} = periodRange();
+  const rangeStartKey = keyOf(y,m,start);
+  const rangeEndKey = keyOf(y,m,end);
 
-function openModal(key){
+  const ids = Object.keys(store.payments)
+    .filter(id => store.payments[id].date >= rangeStartKey && store.payments[id].date <= rangeEndKey)
+    .sort((a,b)=> store.payments[b].date.localeCompare(store.payments[a].date));
+
+  if(ids.length === 0){
+    wrap.innerHTML = '<div class="payments-empty">No payments logged for this period.</div>';
+    return;
+  }
+
+  wrap.innerHTML = ids.map(id=>{
+    const p = store.payments[id];
+    return `<div class="payment-row" data-pid="${id}">
+      <span class="pr-date">${p.date}</span>
+      <span class="pr-period">${p.periodStart} → ${p.periodEnd}</span>
+      <span class="pr-amt">${peso(p.amount)}</span>
+    </div>`;
+  }).join("");
+
+  wrap.querySelectorAll(".payment-row").forEach(row=>{
+    row.addEventListener("click", ()=> openPaymentEditor(row.dataset.pid));
+  });
+}
+
+let currentStatus = "";
+let panelMode = "empty"; // "empty" | "day" | "payment"
+
+function showDayPanel(){
+  panelMode = "day";
+  document.getElementById("dayPanel").style.display = "block";
+  document.getElementById("paymentPanel").style.display = "none";
+}
+function showPaymentPanel(){
+  panelMode = "payment";
+  document.getElementById("dayPanel").style.display = "none";
+  document.getElementById("paymentPanel").style.display = "block";
+}
+
+function selectDay(key){
   selectedDate = key;
   const e = store.entries[key] || {};
   currentStatus = e.status || "";
@@ -1177,7 +1247,17 @@ function openModal(key){
   document.getElementById("remarks").value = e.remarks || "";
   updatePayPreview();
 
-  document.getElementById("modal").classList.add("open");
+  showDayPanel();
+  highlightSelectedDay(key);
+}
+
+function highlightSelectedDay(key){
+  document.querySelectorAll(".day[data-key]").forEach(el=>{
+    el.classList.toggle("selected", el.dataset.key === key);
+  });
+  document.querySelectorAll(".agenda-day[data-key]").forEach(el=>{
+    el.classList.toggle("selected", el.dataset.key === key);
+  });
 }
 
 function setStatusButtons(status){
@@ -1236,9 +1316,8 @@ function updatePayPreview(){
   }
 }
 
-function closeModal(){ document.getElementById("modal").classList.remove("open"); }
-
 function saveEntry(){
+  if(!selectedDate) return;
   const draft = draftEntry();
   const hasAnything = draft.status || draft.otWeekday || draft.otHoliday || draft.remarks.trim();
   if(!hasAnything){
@@ -1248,16 +1327,17 @@ function saveEntry(){
     store.entries[selectedDate] = draft;
   }
   saveStore();
-  closeModal();
   render();
+  selectDay(selectedDate);
   showToast("Saved " + selectedDate);
 }
 
 function clearDay(){
+  if(!selectedDate) return;
   delete store.entries[selectedDate];
   saveStore();
-  closeModal();
   render();
+  selectDay(selectedDate);
   showToast("Cleared " + selectedDate);
 }
 
@@ -1359,11 +1439,12 @@ document.getElementById("statusRow").addEventListener("click", e=>{
 document.getElementById("otHoliday").addEventListener("change", syncHolidayConflict);
 
 document.getElementById("saveBtn").onclick = saveEntry;
-document.getElementById("closeModalBtn").onclick = closeModal;
 document.getElementById("clearDayBtn").onclick = clearDay;
 
-document.getElementById("logPaymentBtn").onclick = () => openPaymentModal(null);
-document.getElementById("closePaymentModalBtn").onclick = closePaymentModal;
+document.getElementById("logPaymentBtn").onclick = () => openPaymentEditor(null);
+document.getElementById("cancelPaymentBtn").onclick = () => {
+  if(selectedDate) selectDay(selectedDate); else showDayPanel();
+};
 document.getElementById("savePaymentBtn").onclick = savePayment;
 document.getElementById("deletePaymentBtn").onclick = deletePayment;
 document.getElementById("payTypeRow").addEventListener("click", e=>{
@@ -1429,6 +1510,8 @@ document.getElementById("themeToggleBtn").onclick = () => {
 initTheme();
 
 render();
+selectDay(todayKey);
+initialSync();
 </script>
 </body>
 </html>
